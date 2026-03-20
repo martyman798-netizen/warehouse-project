@@ -172,24 +172,44 @@ def cmd_observe(args, client: AstarIslandClient):
         print("No budget left for Phase 2.")
     else:
         # --- Phase 2: entropy-based targeting ---
-        # Per seed, use pooled (cross-seed) observations to estimate entropy,
-        # then target the most uncertain cells.
+        # Compute total entropy per seed (including cross-seed obs) to allocate
+        # budget proportionally — seeds with more residual uncertainty get more queries.
         print(f"\nPhase 2: {phase2_budget} entropy-targeted queries across {num_seeds} seeds")
-        budget_per_seed = max(0, phase2_budget // num_seeds)
-        remainder = phase2_budget - budget_per_seed * num_seeds
+
+        seed_total_entropy = []
+        for seed_idx, state in enumerate(initial_states):
+            seed_obs = observations.get(str(seed_idx), {})
+            cross = [observations.get(str(i), {}) for i in range(num_seeds) if i != seed_idx]
+            H_grid = strategy._compute_cell_entropies(state["grid"], seed_obs, map_w, map_h, cross)
+            seed_total_entropy.append(float(H_grid.sum()))
+
+        total_H = sum(seed_total_entropy) or 1
+        raw_allocs = [max(0, round(phase2_budget * h / total_H)) for h in seed_total_entropy]
+        # Fix rounding so allocs sum exactly to phase2_budget
+        diff = phase2_budget - sum(raw_allocs)
+        for i in sorted(range(num_seeds), key=lambda i: seed_total_entropy[i], reverse=True):
+            if diff == 0:
+                break
+            raw_allocs[i] += 1 if diff > 0 else -1
+            diff += -1 if diff > 0 else 1
 
         phase2_tasks: list = []
         for seed_idx, state in enumerate(initial_states):
             seed_str = str(seed_idx)
             seed_obs = observations.get(seed_str, {})
-            alloc = budget_per_seed + (1 if seed_idx < remainder else 0)
+            alloc = raw_allocs[seed_idx]
             if alloc <= 0:
                 continue
+            cross = [observations.get(str(i), {}) for i in range(num_seeds) if i != seed_idx]
             tasks = strategy.plan_phase2_by_entropy(
                 state["grid"], seed_obs, alloc,
                 map_w, map_h, seed_idx,
+                cross_seed_obs=cross,
             )
             phase2_tasks.extend(tasks)
+
+        alloc_str = " ".join(f"s{i}:{a}" for i, a in enumerate(raw_allocs))
+        print(f"  Entropy-proportional alloc: {alloc_str}")
 
         print(strategy.describe_plan(phase2_tasks))
         _execute_tasks(phase2_tasks, "P2")

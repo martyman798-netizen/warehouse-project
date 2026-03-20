@@ -281,6 +281,31 @@ def compute_prediction(
 
             prediction[y, x] = posterior
 
+    # Spatial neighbor smoothing: pull unobserved cells toward their observed neighbors.
+    # A plains cell surrounded by observed settlements should have higher P(Settlement)
+    # than a prior-only estimate gives. Only affects cells with no direct observations.
+    all_obs_keys = set(observations.keys())
+    if cross_seed_obs:
+        for od in cross_seed_obs:
+            all_obs_keys |= set(od.keys())
+
+    smoothed = prediction.copy()
+    SMOOTH_WEIGHT = 0.25
+    for y in range(H):
+        for x in range(W):
+            if f"{x},{y}" in all_obs_keys:
+                continue  # has direct or cross-seed observations — trust the posterior
+            neighbor_preds = []
+            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < W and 0 <= ny < H and f"{nx},{ny}" in all_obs_keys:
+                    neighbor_preds.append(prediction[ny, nx])
+            if not neighbor_preds:
+                continue
+            avg_neighbor = np.mean(neighbor_preds, axis=0)
+            smoothed[y, x] = (1.0 - SMOOTH_WEIGHT) * prediction[y, x] + SMOOTH_WEIGHT * avg_neighbor
+    prediction = smoothed
+
     # Apply minimum probability floor: never assign 0.0 to any class.
     # Zero probability causes infinite KL divergence if ground truth differs.
     prediction = np.clip(prediction, 0.002, None)
