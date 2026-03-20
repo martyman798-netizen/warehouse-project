@@ -94,10 +94,14 @@ def _merge_settlement_stats(
         existing[seed_str] = {}
     for key, vals in new_stats.items():
         if key not in existing[seed_str]:
-            existing[seed_str][key] = {"food": [], "pop": [], "alive": []}
+            existing[seed_str][key] = {"food": [], "pop": [], "alive": [], "wealth": [], "defense": []}
         existing[seed_str][key]["food"].append(vals["food"])
         existing[seed_str][key]["pop"].append(vals["pop"])
         existing[seed_str][key]["alive"].append(vals["alive"])
+        if "wealth" in vals:
+            existing[seed_str][key]["wealth"].append(vals["wealth"])
+        if "defense" in vals:
+            existing[seed_str][key]["defense"].append(vals["defense"])
 
 
 def _aggregate_settlement_stats(
@@ -117,10 +121,14 @@ def _aggregate_settlement_stats(
         alives = vals.get("alive", [])
         if not foods:
             continue
+        wealths  = vals.get("wealth", [])
+        defenses = vals.get("defense", [])
         agg[key] = {
-            "avg_food": sum(foods) / len(foods),
-            "avg_pop":  sum(pops)  / len(pops) if pops else 1.0,
-            "frac_dead": (len(alives) - sum(alives)) / len(alives) if alives else 0.0,
+            "avg_food":    sum(foods) / len(foods),
+            "avg_pop":     sum(pops)  / len(pops) if pops else 1.0,
+            "frac_dead":   (len(alives) - sum(alives)) / len(alives) if alives else 0.0,
+            "avg_wealth":  sum(wealths)  / len(wealths)  if wealths  else 0.5,
+            "avg_defense": sum(defenses) / len(defenses) if defenses else 0.5,
         }
     return agg
 
@@ -227,9 +235,11 @@ def cmd_observe(args, client: AstarIslandClient):
             for s in result.get("settlements", []):
                 key = f"{s['x']},{s['y']}"
                 new_stats[key] = {
-                    "food": s.get("food", 0.5),
-                    "pop":  s.get("population", 1.0),
-                    "alive": 1 if s.get("alive", True) else 0,
+                    "food":    s.get("food", 0.5),
+                    "pop":     s.get("population", 1.0),
+                    "alive":   1 if s.get("alive", True) else 0,
+                    "wealth":  s.get("wealth", 0.5),
+                    "defense": s.get("defense", 0.5),
                 }
             if new_stats:
                 _merge_settlement_stats(settlement_stats, seed_str, new_stats)

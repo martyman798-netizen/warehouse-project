@@ -358,9 +358,11 @@ def compute_prediction(
             if not (0 <= sx < W and 0 <= sy < H):
                 continue
 
-            avg_food  = stats.get("avg_food",  0.5)
-            avg_pop   = stats.get("avg_pop",   1.0)
-            frac_dead = stats.get("frac_dead", 0.0)
+            avg_food   = stats.get("avg_food",    0.5)
+            avg_pop    = stats.get("avg_pop",     1.0)
+            frac_dead  = stats.get("frac_dead",   0.0)
+            avg_wealth = stats.get("avg_wealth",  0.5)
+            avg_defense= stats.get("avg_defense", 0.5)
 
             terrain = initial_grid[sy][sx]
 
@@ -383,12 +385,24 @@ def compute_prediction(
                     prediction[sy, sx, P] = max(0.01, prediction[sy, sx, P] - food_risk * 0.3)
 
                 # Pop/food imbalance: high population draining low food = imminent collapse
-                # Mirrors the simulation's food drain = 0.10/year vs food income ~ 0.08 + forests
                 stress_ratio = avg_pop / max(0.1, avg_food)
                 if stress_ratio > 4.0 and avg_food < 0.4:
                     crisis_boost = min(0.10, (stress_ratio - 4.0) * 0.02)
                     prediction[sy, sx, R] += crisis_boost
                     prediction[sy, sx, S] = max(0.01, prediction[sy, sx, S] - crisis_boost)
+
+                # Wealthy + coastal → likely to develop/maintain a port
+                # Docs: "build longships for naval operations", "develop ports along coastlines"
+                if avg_wealth > 0.6 and _is_coastal(initial_grid, sx, sy, radius=1):
+                    port_boost = min(0.10, (avg_wealth - 0.6) * 0.25)
+                    prediction[sy, sx, P] += port_boost
+                    prediction[sy, sx, S] = max(0.01, prediction[sy, sx, S] - port_boost)
+
+                # High defense → less likely to be raided into collapse
+                if avg_defense > 0.6 and frac_dead > 0.1:
+                    defense_save = min(0.05, (avg_defense - 0.6) * 0.1)
+                    prediction[sy, sx, R] = max(0.01, prediction[sy, sx, R] - defense_save)
+                    prediction[sy, sx, S] += defense_save
 
                 # --- Expansion signal for adjacent Plains cells ---
                 # High population × ample food (net of mortality) → expansion likely
