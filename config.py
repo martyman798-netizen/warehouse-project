@@ -12,6 +12,7 @@ SUBMIT_RATE_LIMIT = 2     # requests per second
 
 OBSERVATIONS_FILE = "observations.json"
 PREDICTIONS_FILE = "predictions.json"
+SETTLEMENT_STATS_FILE = "settlement_stats.json"
 
 # Terrain grid values
 TERRAIN_EMPTY = 0
