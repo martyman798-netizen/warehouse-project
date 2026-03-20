@@ -73,6 +73,11 @@ def _compute_rule_prior(
     adjacent_forests = _count_neighbors(grid, x, y, {config.TERRAIN_FOREST}, radius=2)
     coastal = _is_coastal(grid, x, y, radius=2)
 
+    # Richer neighbourhood counts
+    n_settlements_r5 = _count_neighbors(grid, x, y, {config.TERRAIN_SETTLEMENT}, radius=5)
+    n_ports_r3 = _count_neighbors(grid, x, y, {config.TERRAIN_PORT}, radius=3)
+    n_ruins_r3 = _count_neighbors(grid, x, y, {config.TERRAIN_RUIN}, radius=3)
+
     if terrain == config.TERRAIN_PLAINS or terrain == config.TERRAIN_EMPTY:
         # Plains far from settlements: likely stay empty
         if d_settle > 10:
@@ -81,6 +86,25 @@ def _compute_rule_prior(
             prior = np.array([0.68, 0.14, 0.02, 0.05, 0.09, 0.02], dtype=float)
         else:
             prior = np.array([0.48, 0.22, 0.05, 0.10, 0.12, 0.03], dtype=float)
+
+        # Multiple active settlements nearby → stronger expansion signal
+        if n_settlements_r5 >= 3:
+            prior[S] += 0.08
+            prior[E] -= 0.08
+        elif n_settlements_r5 >= 1:
+            prior[S] += 0.04
+            prior[E] -= 0.04
+
+        # Nearby ruins without active settlements → area in decline
+        if n_ruins_r3 >= 2 and n_settlements_r5 == 0:
+            prior[R] += 0.06
+            prior[F] += 0.04
+            prior[E] -= 0.10
+
+        # Coastal plains near a port → port expansion likely
+        if n_ports_r3 >= 1 and coastal:
+            prior[P] += 0.05
+            prior[E] -= 0.05
 
     elif terrain == config.TERRAIN_FOREST:
         if d_settle > 8:
@@ -138,6 +162,11 @@ def _compute_rule_prior(
             prior[F] += 0.10
             prior[R] -= 0.10
 
+        # Multiple nearby settlements accelerate reclamation
+        if n_settlements_r5 >= 3:
+            prior[S] += 0.08
+            prior[R] -= 0.08
+
     else:
         # Fallback for unknown terrain values
         prior = np.ones(N, dtype=float) / N
@@ -153,23 +182,42 @@ def _compute_rule_prior(
     return prior
 
 
-def _update_with_observations(prior: np.ndarray, observed_classes: list[int]) -> np.ndarray:
+def _update_with_observations(
+    prior: np.ndarray,
+    observed_classes: list[int],
+    cross_seed_classes: list[int] | None = None,
+    cross_weight: float = 0.4,
+) -> np.ndarray:
     """
     Bayesian (Dirichlet-multinomial) update of prior given observed terrain classes.
+
+    Args:
+        prior: prior probability distribution (6,)
+        observed_classes: observations from this seed
+        cross_seed_classes: observations from other seeds (discounted by cross_weight)
+        cross_weight: weight applied to cross-seed observations (0–1)
 
     More observations → observed frequencies dominate the prior.
     """
     n_obs = len(observed_classes)
-    if n_obs == 0:
+    if n_obs == 0 and not cross_seed_classes:
         return prior
 
-    counts = np.bincount(observed_classes, minlength=N).astype(float)
+    counts = np.bincount(observed_classes, minlength=N).astype(float) if n_obs > 0 else np.zeros(N)
+
+    # Add cross-seed observations with a discount factor
+    n_cross = len(cross_seed_classes) if cross_seed_classes else 0
+    if n_cross > 0:
+        cs_counts = np.bincount(cross_seed_classes, minlength=N).astype(float)
+        counts += cs_counts * cross_weight
+
+    # Effective observation count for alpha_strength calculation
+    n_eff = n_obs + n_cross * cross_weight
 
     # Prior strength: weaken prior relative to observations
-    # With many observations, let data dominate
-    if n_obs >= 5:
+    if n_eff >= 5:
         alpha_strength = 0.5
-    elif n_obs >= 3:
+    elif n_eff >= 3:
         alpha_strength = 1.0
     else:
         alpha_strength = 2.0
@@ -183,6 +231,8 @@ def compute_prediction(
     initial_grid: list[list[int]],
     observations: dict[str, list[int]],
     initial_settlements: list[dict] | None = None,
+    cross_seed_obs: list[dict[str, list[int]]] | None = None,
+    cross_seed_weight: float = 0.4,
 ) -> np.ndarray:
     """
     Build H×W×6 prediction tensor for one seed.
@@ -190,9 +240,12 @@ def compute_prediction(
     Args:
         initial_grid: H×W list of terrain values (from GET /rounds/{id})
         observations: dict mapping "x,y" → list of observed terrain class ints
-                      (from multiple simulate calls)
+                      (from multiple simulate calls for THIS seed)
         initial_settlements: optional list of settlement dicts from initial state
-                             (used for settlement position hints)
+        cross_seed_obs: list of observation dicts from OTHER seeds; all 5 seeds
+                        share the same initial_grid so their observations give
+                        additional samples of the same stochastic process
+        cross_seed_weight: discount factor applied to cross-seed samples (0–1)
 
     Returns:
         np.ndarray of shape (H, W, 6) with probabilities summing to 1.0 per cell
@@ -213,10 +266,16 @@ def compute_prediction(
             key = f"{x},{y}"
             obs = observations.get(key, [])
 
+            # Collect cross-seed observations for this cell
+            cross_obs: list[int] = []
+            if cross_seed_obs:
+                for other_obs in cross_seed_obs:
+                    cross_obs.extend(other_obs.get(key, []))
+
             prior = _compute_rule_prior(initial_grid, x, y, settlement_positions)
 
-            if obs:
-                posterior = _update_with_observations(prior, obs)
+            if obs or cross_obs:
+                posterior = _update_with_observations(prior, obs, cross_obs or None, cross_seed_weight)
             else:
                 posterior = prior
 
@@ -224,7 +283,7 @@ def compute_prediction(
 
     # Apply minimum probability floor: never assign 0.0 to any class.
     # Zero probability causes infinite KL divergence if ground truth differs.
-    prediction = np.clip(prediction, 0.01, None)
+    prediction = np.clip(prediction, 0.002, None)
     # Renormalize so each cell's distribution still sums to 1.0
     prediction /= prediction.sum(axis=2, keepdims=True)
 
