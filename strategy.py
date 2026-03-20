@@ -132,41 +132,40 @@ def plan_phase1(
     budget: int,
 ) -> list[ViewportTask]:
     """
-    Phase 1: Distributed coverage tiling.
+    Phase 1: Full coverage per seed.
 
-    Each coverage tile is assigned to exactly ONE seed in round-robin order,
-    so Phase 1 costs only n_tiles queries (≤9 for 40×40) instead of
-    n_tiles × num_seeds (previously up to 45).  Cross-seed pooling in
-    compute_prediction propagates each tile's observations to all seeds.
+    Each seed has its own independent map, so each seed needs its own
+    complete coverage pass. Tiles are sorted by dynamic-cell count so
+    the most informative regions are observed first.
 
-    Tiles are sorted by dynamic-cell count so the most informative regions
-    are assigned first; if budget < n_tiles, coverage still starts with the
-    most uncertain areas.
+    For 5 seeds × 9 tiles = 45 queries on a 40×40 map, leaving 5 queries
+    for Phase 2 entropy-targeted refinement.
     """
     num_seeds = len(initial_states)
     if num_seeds == 0 or budget <= 0:
         return []
 
-    first_grid = initial_states[0]["grid"]
-    map_h = len(first_grid)
-    map_w = len(first_grid[0]) if map_h > 0 else 40
-
-    coverage_tiles = _build_coverage_tiles(map_w, map_h)
-
-    # Sort tiles by dynamic cell count: most informative first
-    scored = sorted(
-        coverage_tiles,
-        key=lambda t: _count_dynamic_cells_in_tile(first_grid, *t),
-        reverse=True,
-    )
-
-    # Assign each tile to one seed in round-robin order
     tasks: list[ViewportTask] = []
-    for tile_idx, (x, y, w, h) in enumerate(scored):
+    for seed_idx, state in enumerate(initial_states):
         if len(tasks) >= budget:
             break
-        seed_idx = tile_idx % num_seeds
-        tasks.append(ViewportTask(seed_idx, x, y, w, h))
+        grid = state["grid"]
+        map_h = len(grid)
+        map_w = len(grid[0]) if map_h > 0 else 40
+
+        coverage_tiles = _build_coverage_tiles(map_w, map_h)
+
+        # Sort tiles by dynamic cell count: most informative first
+        scored = sorted(
+            coverage_tiles,
+            key=lambda t: _count_dynamic_cells_in_tile(grid, *t),
+            reverse=True,
+        )
+
+        for x, y, w, h in scored:
+            if len(tasks) >= budget:
+                break
+            tasks.append(ViewportTask(seed_idx, x, y, w, h))
 
     return tasks
 
