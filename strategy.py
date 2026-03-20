@@ -117,6 +117,16 @@ def _count_dynamic_cells(grid: list[list[int]]) -> int:
     )
 
 
+def _count_dynamic_cells_in_tile(grid: list[list[int]], x: int, y: int, w: int, h: int) -> int:
+    """Count dynamic cells within a specific tile region."""
+    count = 0
+    for ty in range(y, min(y + h, len(grid))):
+        for tx in range(x, min(x + w, len(grid[0]))):
+            if grid[ty][tx] in DYNAMIC_TERRAIN:
+                count += 1
+    return count
+
+
 def plan_observations(
     initial_states: list[dict],
     total_budget: int = 50,
@@ -148,33 +158,39 @@ def plan_observations(
     map_h = len(first_grid)
     map_w = len(first_grid[0]) if map_h > 0 else 40
 
-    # --- Phase 1: Full-coverage tiling ---
+    # --- Phase 1: Full-coverage tiling (dynamic tiles only) ---
     coverage_tiles = _build_coverage_tiles(map_w, map_h)
     n_tiles = len(coverage_tiles)  # typically 9 for 40×40 with 15×15 viewports
 
-    # Budget for Phase 1: n_tiles per seed, but capped at total_budget // 2
-    # to leave room for MC sampling
+    # Max Phase 1 per seed capped so there's budget left for Phase 2
     phase1_per_seed = n_tiles
-    phase1_total = phase1_per_seed * num_seeds
-
-    # If we can't afford full coverage for all seeds, reduce evenly
-    if phase1_total > total_budget:
+    if phase1_per_seed * num_seeds > total_budget:
         phase1_per_seed = max(1, total_budget // num_seeds)
-        phase1_total = phase1_per_seed * num_seeds
 
-    phase2_budget = total_budget - phase1_total
+    phase1_count = 0  # track actual queries used in Phase 1
 
-    # Add Phase 1 tiles for each seed
     for seed_idx, state in enumerate(initial_states):
         grid = state["grid"]
         seed_map_h = len(grid)
         seed_map_w = len(grid[0]) if seed_map_h > 0 else map_w
         seed_tiles = _build_coverage_tiles(seed_map_w, seed_map_h)
 
-        for tile_idx, (x, y, w, h) in enumerate(seed_tiles):
+        # Score each tile by dynamic cell count; drop tiles with no dynamic cells
+        scored = [(t, _count_dynamic_cells_in_tile(grid, *t)) for t in seed_tiles]
+        dynamic_tiles = sorted(
+            [(t, s) for t, s in scored if s > 0],
+            key=lambda ts: ts[1],
+            reverse=True,
+        )
+        filtered_tiles = [t for t, _ in dynamic_tiles]
+
+        for tile_idx, (x, y, w, h) in enumerate(filtered_tiles):
             if tile_idx >= phase1_per_seed:
                 break
             tasks.append(ViewportTask(seed_idx, x, y, w, h))
+            phase1_count += 1
+
+    phase2_budget = total_budget - phase1_count
 
     # --- Phase 2: MC hotspot sampling ---
     if phase2_budget <= 0:
