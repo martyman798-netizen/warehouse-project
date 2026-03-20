@@ -432,6 +432,78 @@ def cmd_score(args, client: AstarIslandClient):
         print(f"  ERROR: {e}")
 
 
+def cmd_train(args, client: AstarIslandClient):
+    """Fetch historical ground truth and train the learned prior model."""
+    import numpy as np
+    import learned_model
+
+    print("Fetching completed rounds...")
+    my_rounds = client.get_my_rounds()
+    completed = [r for r in my_rounds if r.get("status") == "completed"]
+    if not completed:
+        print("No completed rounds available for training. Play more rounds first.")
+        return
+    print(f"  Found {len(completed)} completed round(s)")
+
+    samples: list[tuple[int, np.ndarray, np.ndarray]] = []
+
+    for round_info in completed:
+        round_id  = round_info["id"]
+        round_num = round_info.get("round_number", "?")
+        seeds_count = round_info.get("seeds_count", 5)
+        print(f"\nRound {round_num}  ({round_id}):")
+
+        for seed_idx in range(seeds_count):
+            try:
+                analysis = client.get_analysis(round_id, seed_idx)
+            except Exception as e:
+                print(f"  Seed {seed_idx}: ERROR {e}")
+                continue
+
+            initial_grid = analysis.get("initial_grid")
+            ground_truth = analysis.get("ground_truth")
+            score        = analysis.get("score", "?")
+
+            if not initial_grid or not ground_truth:
+                print(f"  Seed {seed_idx}: missing data, skipping")
+                continue
+
+            H = len(initial_grid)
+            W = len(initial_grid[0]) if H > 0 else 0
+            gt_array = np.array(ground_truth, dtype=np.float64)  # (H, W, 6)
+
+            settlement_positions = [
+                (x, y)
+                for y, row in enumerate(initial_grid)
+                for x, val in enumerate(row)
+                if val in {config.TERRAIN_SETTLEMENT, config.TERRAIN_PORT}
+            ]
+
+            n = 0
+            for y in range(H):
+                for x in range(W):
+                    terrain = initial_grid[y][x]
+                    if terrain not in learned_model.LEARNABLE_TERRAINS:
+                        continue
+                    feat = learned_model.extract_features(initial_grid, x, y, settlement_positions)
+                    gt_prob = gt_array[y, x]
+                    samples.append((terrain, feat, gt_prob))
+                    n += 1
+
+            print(f"  Seed {seed_idx}: score={score}  {n} training cells collected")
+
+    if not samples:
+        print("\nNo training samples collected.")
+        return
+
+    print(f"\nTraining on {len(samples):,} samples "
+          f"({len(completed)} round(s) × up to 5 seeds)...")
+    weights = learned_model.train(samples, reg=getattr(args, "reg", 0.005))
+    learned_model.save(weights, config.MODEL_WEIGHTS_FILE)
+    learned_model.load(config.MODEL_WEIGHTS_FILE)
+    print("\nDone. Model weights will be used automatically for future predictions.")
+
+
 def cmd_run(args, client: AstarIslandClient):
     """observe + predict (review predictions.json before submitting)."""
     cmd_observe(args, client)
@@ -475,6 +547,14 @@ def main():
     p_sub.add_argument("--round-id", required=True, help="Round UUID")
     p_sub.add_argument("--seed", default="all", help="Seed index (0-4) or 'all' (default)")
 
+    # train
+    p_train = subparsers.add_parser(
+        "train",
+        help="Train learned prior model from historical ground truth (run after rounds complete)",
+    )
+    p_train.add_argument("--reg", type=float, default=0.005,
+                         help="L2 regularisation strength (default 0.005)")
+
     # run
     p_run = subparsers.add_parser("run", help="observe + predict + submit in one go")
     p_run.add_argument("--round-id", required=True, help="Round UUID")
@@ -495,6 +575,7 @@ def main():
         "observe": cmd_observe,
         "predict": cmd_predict,
         "submit": cmd_submit,
+        "train": cmd_train,
         "run": cmd_run,
     }
     dispatch[args.command](args, client)

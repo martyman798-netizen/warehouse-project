@@ -57,6 +57,14 @@ class AstarIslandClient:
     def get_leaderboard(self) -> list[dict]:
         return self._get("/leaderboard")
 
+    def get_analysis(self, round_id: str, seed_index: int) -> dict:
+        """Post-round ground truth comparison for one seed (only after round completes).
+
+        Returns {prediction, ground_truth, score, width, height, initial_grid}.
+        ground_truth is H×W×6 probability distribution from Monte Carlo runs.
+        """
+        return self._get(f"/analysis/{round_id}/{seed_index}")
+
     def simulate(
         self,
         round_id: str,
