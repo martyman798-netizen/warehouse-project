@@ -24,7 +24,7 @@ def run_simulation(
     initial_settlements: list[dict],
     rng: random.Random,
     expansion_rate: float = 0.12,
-    winter_severity: float = 0.25,
+    winter_severity: float = 0.15,
 ) -> tuple[list[list[int]], list[dict]]:
     """
     Stochastic 50-year simulation following the documented game lifecycle:
@@ -46,7 +46,7 @@ def run_simulation(
         initial_settlements: list of dicts with at least {x, y, has_port}
         rng:                 seeded Random instance for reproducibility
         expansion_rate:      base probability a thriving settlement expands per year
-        winter_severity:     mean food drain per winter (Gaussian σ=0.08)
+        winter_severity:     mean food drain per winter (Gaussian σ=0.08); calibrated to ~0.15
 
     Returns:
         (final_grid, final_settlements) after 50 years
@@ -114,14 +114,14 @@ def run_simulation(
                             grid[sy][sx] = config.TERRAIN_PORT
                         break
 
-            # Expansion to nearby plains/empty
+            # Expansion to nearby plains/empty/forest (forests can be cleared)
             if s["pop"] > 2.5 and s["food"] > 0.45 and rng.random() < expansion_rate:
                 candidates = [
                     (sx + dx, sy + dy)
                     for dx in range(-4, 5) for dy in range(-4, 5)
                     if 1 <= abs(dx) + abs(dy) <= 4
                     and 0 <= sx+dx < W and 0 <= sy+dy < H
-                    and grid[sy+dy][sx+dx] in {config.TERRAIN_PLAINS, config.TERRAIN_EMPTY}
+                    and grid[sy+dy][sx+dx] in {config.TERRAIN_PLAINS, config.TERRAIN_EMPTY, config.TERRAIN_FOREST}
                     and (sx+dx, sy+dy) not in setts
                 ]
                 if candidates:
