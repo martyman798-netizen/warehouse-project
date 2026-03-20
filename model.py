@@ -222,6 +222,12 @@ def compute_prediction(
 
             prediction[y, x] = posterior
 
+    # Apply minimum probability floor: never assign 0.0 to any class.
+    # Zero probability causes infinite KL divergence if ground truth differs.
+    prediction = np.clip(prediction, 0.01, None)
+    # Renormalize so each cell's distribution still sums to 1.0
+    prediction /= prediction.sum(axis=2, keepdims=True)
+
     return prediction
 
 
