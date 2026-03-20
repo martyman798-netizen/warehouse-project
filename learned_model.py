@@ -22,8 +22,9 @@ import config
 # Feature extraction
 # ---------------------------------------------------------------------------
 
-N_FEATURES = 8   # d_settle_log, forest_adj, coastal, n_sett, n_ports, n_ruins,
-                 # d_ocean_log, bias
+N_FEATURES = 13  # d_settle_log, forest_adj_r2, coastal, n_sett_r5, n_ports_r3,
+                 # n_ruins_r3, d_ocean_log, forest_r1, n_sett_r3, d2_settle_log,
+                 # n_ruins_r5, n_forests_r3, bias
 N_CLASSES = config.NUM_CLASSES
 
 # Terrain types that need a learned model (static types use fixed priors)
@@ -102,6 +103,50 @@ def extract_features(
                 d_ocean = min(d_ocean, abs(dx) + abs(dy))
     d_ocean_log = np.log1p(d_ocean) / np.log1p(30)
 
+    # Direct forest adjacency (4-neighborhood only) — the game's primary food source
+    # per-mechanics: settlements produce food from *adjacent* terrain, radius 1 matters most
+    forest_r1 = sum(
+        1 for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        if 0 <= x + dx < W and 0 <= y + dy < H
+        and grid[y + dy][x + dx] == config.TERRAIN_FOREST
+    )
+    forest_r1_norm = forest_r1 / 4.0
+
+    # Settlement density within radius 3 — immediate expansion / conflict pressure zone
+    n_sett_r3 = sum(
+        1 for dy in range(-3, 4) for dx in range(-3, 4)
+        if 0 <= x + dx < W and 0 <= y + dy < H
+        and grid[y + dy][x + dx] == config.TERRAIN_SETTLEMENT
+    )
+    n_sett_r3_norm = min(n_sett_r3, 8) / 8.0
+
+    # Distance to 2nd-nearest settlement — isolation signal
+    # Isolated settlements face less raiding and are more stable
+    if len(settlement_positions) >= 2:
+        dists = sorted(abs(x - sx) + abs(y - sy) for sx, sy in settlement_positions)
+        d2_settle = dists[1]
+    elif len(settlement_positions) == 1:
+        d2_settle = 40
+    else:
+        d2_settle = 40
+    d2_settle_log = np.log1p(d2_settle) / np.log1p(40)
+
+    # Ruins within radius 5 — wider area civilisation-collapse signal
+    n_ruins_r5 = sum(
+        1 for dy in range(-5, 6) for dx in range(-5, 6)
+        if 0 <= x + dx < W and 0 <= y + dy < H
+        and grid[y + dy][x + dx] == config.TERRAIN_RUIN
+    )
+    n_ruins_r5_norm = min(n_ruins_r5, 10) / 10.0
+
+    # Forests within radius 3 — food buffer beyond immediate adjacency
+    n_forests_r3 = sum(
+        1 for dy in range(-3, 4) for dx in range(-3, 4)
+        if 0 <= x + dx < W and 0 <= y + dy < H
+        and grid[y + dy][x + dx] == config.TERRAIN_FOREST
+    )
+    n_forests_r3_norm = min(n_forests_r3, 20) / 20.0
+
     return np.array([
         d_settle_log,
         forest_adj_norm,
@@ -110,7 +155,12 @@ def extract_features(
         n_ports_norm,
         n_ruins_norm,
         d_ocean_log,
-        1.0,          # bias
+        forest_r1_norm,       # direct food source (4-adj)
+        n_sett_r3_norm,       # expansion / conflict pressure zone
+        d2_settle_log,        # isolation from nearest rival
+        n_ruins_r5_norm,      # wider area collapse signal
+        n_forests_r3_norm,    # food buffer
+        1.0,                  # bias
     ], dtype=np.float64)
 
 
