@@ -246,11 +246,11 @@ def cmd_submit(args, client: AstarIslandClient):
 
 
 def cmd_run(args, client: AstarIslandClient):
-    """observe + predict + submit in one go."""
+    """observe + predict (review predictions.json before submitting)."""
     cmd_observe(args, client)
     cmd_predict(args, client)
-    args.seed = "all"
-    cmd_submit(args, client)
+    print("\nDone. Review predictions.json, then submit with:")
+    print(f"  python main.py submit --round-id {args.round_id}")
 
 
 # ---------------------------------------------------------------------------
