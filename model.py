@@ -136,10 +136,24 @@ def _compute_rule_prior(
             survival += 0.06
             ruin -= 0.05
 
-        # Coastal → higher port probability
+        # Coastal → higher port probability (game: settlements develop ports along coastlines)
         if coastal:
             port += 0.10
             survival += 0.04
+
+        # Dense settlement area → more conflict → higher ruin risk
+        # (game: desperate settlements raid more aggressively)
+        if n_settlements_r5 >= 5:
+            ruin += 0.08
+            survival -= 0.08
+        elif n_settlements_r5 >= 3:
+            ruin += 0.04
+            survival -= 0.04
+
+        # Nearby ports → trade wealth → better survival
+        if n_ports_r3 >= 2:
+            survival += 0.04
+            ruin -= 0.04
 
         ruin = max(0.05, ruin - (survival - 0.50) - (port - 0.12))
         total = survival + port + ruin
@@ -158,6 +172,18 @@ def _compute_rule_prior(
         if adjacent_forests >= 2:
             prior[P] += 0.05
             prior[R] -= 0.05
+        # Port trade network: nearby ports → trade wealth → higher survival
+        # (game: ports within range trade, generating wealth for both parties)
+        if n_ports_r3 >= 2:
+            prior[P] += 0.06
+            prior[R] -= 0.06
+        elif n_ports_r3 >= 1:
+            prior[P] += 0.03
+            prior[R] -= 0.03
+        # Dense settlement conflict hurts ports too
+        if n_settlements_r5 >= 5:
+            prior[R] += 0.05
+            prior[P] -= 0.05
 
     elif terrain == config.TERRAIN_RUIN:
         prior = np.array([0.05, 0.18, 0.03, 0.48, 0.22, 0.04], dtype=float)
@@ -174,6 +200,16 @@ def _compute_rule_prior(
         if n_settlements_r5 >= 3:
             prior[S] += 0.08
             prior[R] -= 0.08
+
+        # Coastal ruins can be restored as ports (explicit game rule)
+        # "Coastal ruins can even be restored as ports"
+        if coastal and d_settle <= 8:
+            prior[P] += 0.08
+            prior[R] -= 0.06
+            prior[S] -= 0.02
+        elif coastal and n_ports_r3 >= 1:
+            prior[P] += 0.06
+            prior[R] -= 0.06
 
     else:
         # Fallback for unknown terrain values
@@ -340,9 +376,20 @@ def compute_prediction(
                     for dx, dy in [(-1,0),(1,0),(0,-1),(0,1),(-1,-1),(1,-1),(-1,1),(1,1)]:
                         nx, ny = sx + dx, sy + dy
                         if 0 <= nx < W and 0 <= ny < H:
-                            if initial_grid[ny][nx] in {config.TERRAIN_PLAINS, config.TERRAIN_EMPTY}:
-                                prediction[ny, nx, S] += boost
-                                prediction[ny, nx, E] = max(0.01, prediction[ny, nx, E] - boost)
+                            adj_terrain = initial_grid[ny][nx]
+                            if adj_terrain in {config.TERRAIN_PLAINS, config.TERRAIN_EMPTY}:
+                                # Coastal adjacent cell → could become a port instead
+                                if _is_coastal(initial_grid, nx, ny, radius=1):
+                                    prediction[ny, nx, P] += boost * 0.6
+                                    prediction[ny, nx, S] += boost * 0.4
+                                    prediction[ny, nx, E] = max(0.01, prediction[ny, nx, E] - boost)
+                                else:
+                                    prediction[ny, nx, S] += boost
+                                    prediction[ny, nx, E] = max(0.01, prediction[ny, nx, E] - boost)
+                            elif adj_terrain == config.TERRAIN_RUIN:
+                                # Thriving settlement next to a ruin → strong reclamation signal
+                                prediction[ny, nx, S] += boost * 0.8
+                                prediction[ny, nx, R] = max(0.01, prediction[ny, nx, R] - boost * 0.8)
 
     # Apply minimum probability floor: never assign 0.0 to any class.
     # Zero probability causes infinite KL divergence if ground truth differs.
