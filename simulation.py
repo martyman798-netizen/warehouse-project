@@ -188,7 +188,8 @@ def run_simulation(
         # Settlements lose food. Collapse → ruins; dispersing population to    #
         # nearby friendly settlements.                                         #
         # ------------------------------------------------------------------ #
-        sev = rng.gauss(winter_severity, 0.08)
+        # Docs: "All settlements lose food" — severity is always non-negative
+        sev = max(0.0, rng.gauss(winter_severity, 0.08))
         for (sx, sy), s in list(setts.items()):
             if not s["alive"]:
                 continue
