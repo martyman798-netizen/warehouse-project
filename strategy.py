@@ -127,6 +127,53 @@ def _count_dynamic_cells_in_tile(grid: list[list[int]], x: int, y: int, w: int, 
     return count
 
 
+def plan_phase1(
+    initial_states: list[dict],
+    budget: int,
+) -> list[ViewportTask]:
+    """
+    Phase 1 only: full-coverage tiling across all seeds.
+    Returns tasks and the number of queries consumed.
+    Budget is shared across seeds; each seed gets at most n_tiles dynamic tiles.
+    """
+    num_seeds = len(initial_states)
+    if num_seeds == 0 or budget <= 0:
+        return []
+
+    first_grid = initial_states[0]["grid"]
+    map_h = len(first_grid)
+    map_w = len(first_grid[0]) if map_h > 0 else 40
+
+    coverage_tiles = _build_coverage_tiles(map_w, map_h)
+    n_tiles = len(coverage_tiles)
+
+    phase1_per_seed = n_tiles
+    if phase1_per_seed * num_seeds > budget:
+        phase1_per_seed = max(1, budget // num_seeds)
+
+    tasks: list[ViewportTask] = []
+    for seed_idx, state in enumerate(initial_states):
+        grid = state["grid"]
+        seed_map_h = len(grid)
+        seed_map_w = len(grid[0]) if seed_map_h > 0 else map_w
+        seed_tiles = _build_coverage_tiles(seed_map_w, seed_map_h)
+
+        scored = [(t, _count_dynamic_cells_in_tile(grid, *t)) for t in seed_tiles]
+        dynamic_tiles = sorted(
+            [(t, s) for t, s in scored if s > 0],
+            key=lambda ts: ts[1],
+            reverse=True,
+        )
+        filtered_tiles = [t for t, _ in dynamic_tiles]
+
+        for tile_idx, (x, y, w, h) in enumerate(filtered_tiles):
+            if tile_idx >= phase1_per_seed:
+                break
+            tasks.append(ViewportTask(seed_idx, x, y, w, h))
+
+    return tasks
+
+
 def plan_observations(
     initial_states: list[dict],
     total_budget: int = 50,
@@ -238,6 +285,77 @@ def plan_observations(
         for i in range(alloc):
             vp = hotspot_viewports[i % len(hotspot_viewports)]
             tasks.append(ViewportTask(seed_idx, *vp))
+
+    return tasks
+
+
+def _compute_cell_entropies(
+    initial_grid: list[list[int]],
+    observations: dict[str, list[int]],
+    map_w: int,
+    map_h: int,
+) -> "np.ndarray":
+    """
+    Compute Shannon entropy of the posterior distribution for every cell.
+    Cells with high entropy are most uncertain and benefit most from more observations.
+    """
+    import numpy as np
+    import model as terrain_model
+
+    settlement_positions = [
+        (x, y)
+        for y, row in enumerate(initial_grid)
+        for x, val in enumerate(row)
+        if val in {config.TERRAIN_SETTLEMENT, config.TERRAIN_PORT}
+    ]
+    entropies = np.zeros((map_h, map_w))
+    for y in range(map_h):
+        for x in range(map_w):
+            prior = terrain_model._compute_rule_prior(initial_grid, x, y, settlement_positions)
+            obs = observations.get(f"{x},{y}", [])
+            if obs:
+                posterior = terrain_model._update_with_observations(prior, obs)
+            else:
+                posterior = prior
+            posterior = np.clip(posterior, 1e-9, None)
+            posterior /= posterior.sum()
+            entropies[y, x] = -float(np.sum(posterior * np.log(posterior)))
+    return entropies
+
+
+def plan_phase2_by_entropy(
+    initial_grid: list[list[int]],
+    observations: dict[str, list[int]],
+    phase2_budget: int,
+    map_w: int,
+    map_h: int,
+    seed_idx: int,
+) -> list[ViewportTask]:
+    """
+    Plan Phase 2 viewports targeting highest-entropy cells.
+
+    After Phase 1 coverage, compute per-cell entropy and greedily place
+    viewports around the most uncertain cells. This focuses remaining
+    budget where observations reduce uncertainty most.
+    """
+    import numpy as np
+
+    if phase2_budget <= 0:
+        return []
+
+    entropies = _compute_cell_entropies(initial_grid, observations, map_w, map_h)
+    tasks: list[ViewportTask] = []
+    covered = np.zeros((map_h, map_w), dtype=bool)
+
+    for _ in range(phase2_budget):
+        masked = entropies.copy()
+        masked[covered] = 0.0
+        if masked.max() < 1e-9:
+            break
+        cy, cx = divmod(int(masked.argmax()), map_w)
+        x, y, w, h = _viewport_centered_on(cx, cy, map_w, map_h)
+        tasks.append(ViewportTask(seed_idx, x, y, w, h))
+        covered[y:y + h, x:x + w] = True
 
     return tasks
 

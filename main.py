@@ -132,38 +132,68 @@ def cmd_observe(args, client: AstarIslandClient):
         print("No budget remaining.")
         return
 
-    # Plan observations
-    tasks = strategy.plan_observations(initial_states, total_budget=remaining)
-    print(strategy.describe_plan(tasks))
-
     # Load existing observations
     observations = _load_observations(round_id)
 
-    # Execute observations
-    for i, task in enumerate(tasks, 1):
-        print(f"  [{i:3d}/{len(tasks)}] seed={task.seed_index} "
-              f"viewport=({task.x},{task.y})  {task.w}×{task.h} ...", end=" ", flush=True)
-        try:
-            result = client.simulate(
-                round_id, task.seed_index,
-                viewport_x=task.x, viewport_y=task.y,
-                viewport_w=task.w, viewport_h=task.h,
+    def _execute_tasks(tasks: list, label: str) -> int:
+        """Execute a list of ViewportTasks; return number actually executed."""
+        executed = 0
+        for i, task in enumerate(tasks, 1):
+            print(f"  {label} [{i:3d}/{len(tasks)}] seed={task.seed_index} "
+                  f"viewport=({task.x},{task.y})  {task.w}×{task.h} ...", end=" ", flush=True)
+            try:
+                result = client.simulate(
+                    round_id, task.seed_index,
+                    viewport_x=task.x, viewport_y=task.y,
+                    viewport_w=task.w, viewport_h=task.h,
+                )
+            except Exception as e:
+                print(f"ERROR: {e}")
+                break
+            new_obs = terrain_model.grid_to_observations(
+                result["grid"],
+                result["viewport"]["x"],
+                result["viewport"]["y"],
             )
-        except Exception as e:
-            print(f"ERROR: {e}")
-            break
+            seed_str = str(task.seed_index)
+            _merge_observations(observations, seed_str, new_obs)
+            print(f"done  ({result['queries_used']}/{result['queries_max']} queries used)")
+            executed += 1
+        return executed
 
-        # Convert observed grid to class observations
-        new_obs = terrain_model.grid_to_observations(
-            result["grid"],
-            result["viewport"]["x"],
-            result["viewport"]["y"],
-        )
-        seed_str = str(task.seed_index)
-        _merge_observations(observations, seed_str, new_obs)
-        print(f"done  ({result['queries_used']}/{result['queries_max']} queries used)")
-
+    # --- Phase 1: full-coverage tiling ---
+    phase1_tasks = strategy.plan_phase1(initial_states, budget=remaining)
+    print(f"\nPhase 1: {len(phase1_tasks)} coverage tiles")
+    p1_done = _execute_tasks(phase1_tasks, "P1")
     _save_observations(round_id, observations)
+
+    phase2_budget = remaining - p1_done
+    if phase2_budget <= 0:
+        print("No budget left for Phase 2.")
+    else:
+        # --- Phase 2: entropy-based targeting ---
+        # Per seed, use pooled (cross-seed) observations to estimate entropy,
+        # then target the most uncertain cells.
+        print(f"\nPhase 2: {phase2_budget} entropy-targeted queries across {num_seeds} seeds")
+        budget_per_seed = max(0, phase2_budget // num_seeds)
+        remainder = phase2_budget - budget_per_seed * num_seeds
+
+        phase2_tasks: list = []
+        for seed_idx, state in enumerate(initial_states):
+            seed_str = str(seed_idx)
+            seed_obs = observations.get(seed_str, {})
+            alloc = budget_per_seed + (1 if seed_idx < remainder else 0)
+            if alloc <= 0:
+                continue
+            tasks = strategy.plan_phase2_by_entropy(
+                state["grid"], seed_obs, alloc,
+                map_w, map_h, seed_idx,
+            )
+            phase2_tasks.extend(tasks)
+
+        print(strategy.describe_plan(phase2_tasks))
+        _execute_tasks(phase2_tasks, "P2")
+        _save_observations(round_id, observations)
 
     # Print per-seed observation coverage
     for seed_idx in range(num_seeds):
@@ -192,12 +222,21 @@ def cmd_predict(args, client: AstarIslandClient):
         seed_str = str(seed_idx)
         seed_obs = observations.get(seed_str, {})
         n_obs = sum(len(v) for v in seed_obs.values())
-        print(f"  Seed {seed_idx}: computing prediction ({n_obs} observations)...", end=" ", flush=True)
+
+        # Cross-seed observations: collect obs from all OTHER seeds
+        cross_seed_obs = [
+            observations.get(str(i), {})
+            for i in range(num_seeds)
+            if i != seed_idx
+        ]
+        n_cross = sum(len(v) for od in cross_seed_obs for v in od.values())
+        print(f"  Seed {seed_idx}: computing prediction ({n_obs} own + {n_cross} cross-seed observations)...", end=" ", flush=True)
 
         pred_array = terrain_model.compute_prediction(
             state["grid"],
             seed_obs,
             state.get("settlements"),
+            cross_seed_obs=cross_seed_obs,
         )
 
         # Validate: probabilities must sum to 1.0 per cell
