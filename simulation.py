@@ -23,8 +23,8 @@ def run_simulation(
     initial_grid: list[list[int]],
     initial_settlements: list[dict],
     rng: random.Random,
-    expansion_rate: float = 0.12,
-    winter_severity: float = 0.15,
+    expansion_rate: float = 0.03,
+    winter_severity: float = 0.08,
 ) -> tuple[list[list[int]], list[dict]]:
     """
     Stochastic 50-year simulation following the documented game lifecycle:
@@ -94,7 +94,7 @@ def run_simulation(
 
             fa = _forest_adj(sx, sy)
             food_income = 0.08 + fa * 0.04
-            s["food"] = min(1.0, s["food"] + food_income - 0.10)
+            s["food"] = min(1.0, s["food"] + food_income - 0.05)
             if s["food"] > 0.4:
                 s["pop"] = min(8.0, s["pop"] + 0.15)
 
@@ -129,7 +129,7 @@ def run_simulation(
                     grid[ny][nx] = config.TERRAIN_SETTLEMENT
                     setts[(nx, ny)] = {
                         "pop":          rng.uniform(0.5, 1.5),
-                        "food":         s["food"] * rng.uniform(0.4, 0.6),
+                        "food":         max(0.25, s["food"] * rng.uniform(0.4, 0.6)),
                         "wealth":       s["wealth"] * 0.3,
                         "defense":      0.2,
                         "has_port":     False,
