@@ -402,7 +402,13 @@ def cmd_score(args, client: AstarIslandClient):
         if not my_rounds:
             print("  No rounds found.")
         for r in my_rounds:
-            print(f"  Round {r.get('round_number','?'):3}:  score={r.get('score','?')}  id={r['id']}")
+            score = r.get('round_score')
+            rank = r.get('rank')
+            total = r.get('total_teams')
+            submitted = r.get('seeds_submitted', 0)
+            score_str = f"{score:.4f}" if score is not None else "?"
+            rank_str = f"rank={rank}/{total}" if rank is not None else "not ranked"
+            print(f"  Round {r.get('round_number','?'):3}:  score={score_str}  {rank_str}  submitted={submitted}  id={r['id']}")
     except Exception as e:
         print(f"  ERROR: {e}")
 
@@ -410,8 +416,12 @@ def cmd_score(args, client: AstarIslandClient):
     print("Leaderboard (top 10):")
     try:
         lb = client.get_leaderboard()
-        for i, entry in enumerate(lb[:10], 1):
-            print(f"  #{i:2d}  {str(entry.get('team_name','?')):<22}  score={entry.get('score','?')}")
+        for entry in lb[:10]:
+            rank = entry.get('rank', '?')
+            name = str(entry.get('team_name', '?'))
+            wscore = entry.get('weighted_score')
+            wscore_str = f"{wscore:.4f}" if wscore is not None else "?"
+            print(f"  #{rank:<3}  {name:<24}  weighted_score={wscore_str}")
     except Exception as e:
         print(f"  ERROR: {e}")
 
