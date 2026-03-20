@@ -49,9 +49,17 @@ def _compute_rule_prior(
     settlement_positions: list[tuple[int, int]],
 ) -> np.ndarray:
     """
-    Compute rule-based prior probability distribution for cell (x, y).
+    Compute prior probability distribution for cell (x, y).
+
+    Uses the learned softmax model if weights are loaded (python main.py train),
+    otherwise falls back to the hand-crafted rule-based prior.
     Returns array of shape (6,) summing to 1.0.
     """
+    import learned_model
+    learned = learned_model.compute_prior(grid, x, y, settlement_positions)
+    if learned is not None:
+        return learned
+
     terrain = grid[y][x]
 
     # Static terrain: certain prediction

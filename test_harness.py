@@ -593,6 +593,45 @@ def run_predict(client: MockClient, observations: dict, settlement_stats: dict,
 # Main
 # ---------------------------------------------------------------------------
 
+def train_on_mock_rounds(
+    train_seeds: list[int],
+    mc_runs: int,
+    reg: float = 0.005,
+) -> None:
+    """
+    Train the learned prior on several synthetic maps (as a proxy for real rounds).
+    Each map seed generates a unique map + ground truth, simulating what
+    /analysis would return after real rounds.
+    """
+    import learned_model
+
+    samples = []
+    for seed in train_seeds:
+        rng = random.Random(seed)
+        grid = _generate_map(rng)
+        settlements = _initial_settlements(grid)
+        gt = compute_ground_truth(grid, settlements, mc_runs, base_seed=seed * 100)
+
+        H, W = len(grid), len(grid[0])
+        gt_arr = gt  # (H, W, 6) numpy array
+
+        spos = [(x, y) for y, row in enumerate(grid) for x, val in enumerate(row)
+                if val in {config.TERRAIN_SETTLEMENT, config.TERRAIN_PORT}]
+
+        for y in range(H):
+            for x in range(W):
+                terrain = grid[y][x]
+                if terrain not in learned_model.LEARNABLE_TERRAINS:
+                    continue
+                feat = learned_model.extract_features(grid, x, y, spos)
+                samples.append((terrain, feat, gt_arr[y, x]))
+
+    print(f"  Training on {len(samples):,} samples from {len(train_seeds)} synthetic maps...")
+    weights = learned_model.train(samples, reg=reg)
+    learned_model.save(weights)
+    learned_model.load()
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mc",   type=int, default=20,
@@ -601,7 +640,18 @@ def main():
                         help="Map generation seed (default 0)")
     parser.add_argument("--budget", type=int, default=50,
                         help="Query budget (default 50)")
+    parser.add_argument("--train-first", action="store_true",
+                        help="Train learned prior on 5 synthetic maps before testing")
+    parser.add_argument("--train-mc", type=int, default=40,
+                        help="MC runs per training map (default 40, used with --train-first)")
     args = parser.parse_args()
+
+    if args.train_first:
+        # Train on maps with different seeds from the test map
+        train_seeds = [args.seed + 100 + i for i in range(5)]
+        print(f"Pre-training on synthetic maps {train_seeds} ({args.train_mc} MC runs each)...")
+        train_on_mock_rounds(train_seeds, mc_runs=args.train_mc)
+        print()
 
     map_rng = random.Random(args.seed)
     print(f"Generating map (seed={args.seed})...")
