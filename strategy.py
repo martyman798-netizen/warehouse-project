@@ -132,9 +132,16 @@ def plan_phase1(
     budget: int,
 ) -> list[ViewportTask]:
     """
-    Phase 1 only: full-coverage tiling across all seeds.
-    Returns tasks and the number of queries consumed.
-    Budget is shared across seeds; each seed gets at most n_tiles dynamic tiles.
+    Phase 1: Distributed coverage tiling.
+
+    Each coverage tile is assigned to exactly ONE seed in round-robin order,
+    so Phase 1 costs only n_tiles queries (≤9 for 40×40) instead of
+    n_tiles × num_seeds (previously up to 45).  Cross-seed pooling in
+    compute_prediction propagates each tile's observations to all seeds.
+
+    Tiles are sorted by dynamic-cell count so the most informative regions
+    are assigned first; if budget < n_tiles, coverage still starts with the
+    most uncertain areas.
     """
     num_seeds = len(initial_states)
     if num_seeds == 0 or budget <= 0:
@@ -145,31 +152,21 @@ def plan_phase1(
     map_w = len(first_grid[0]) if map_h > 0 else 40
 
     coverage_tiles = _build_coverage_tiles(map_w, map_h)
-    n_tiles = len(coverage_tiles)
 
-    phase1_per_seed = n_tiles
-    if phase1_per_seed * num_seeds > budget:
-        phase1_per_seed = max(1, budget // num_seeds)
+    # Sort tiles by dynamic cell count: most informative first
+    scored = sorted(
+        coverage_tiles,
+        key=lambda t: _count_dynamic_cells_in_tile(first_grid, *t),
+        reverse=True,
+    )
 
+    # Assign each tile to one seed in round-robin order
     tasks: list[ViewportTask] = []
-    for seed_idx, state in enumerate(initial_states):
-        grid = state["grid"]
-        seed_map_h = len(grid)
-        seed_map_w = len(grid[0]) if seed_map_h > 0 else map_w
-        seed_tiles = _build_coverage_tiles(seed_map_w, seed_map_h)
-
-        scored = [(t, _count_dynamic_cells_in_tile(grid, *t)) for t in seed_tiles]
-        dynamic_tiles = sorted(
-            [(t, s) for t, s in scored if s > 0],
-            key=lambda ts: ts[1],
-            reverse=True,
-        )
-        filtered_tiles = [t for t, _ in dynamic_tiles]
-
-        for tile_idx, (x, y, w, h) in enumerate(filtered_tiles):
-            if tile_idx >= phase1_per_seed:
-                break
-            tasks.append(ViewportTask(seed_idx, x, y, w, h))
+    for tile_idx, (x, y, w, h) in enumerate(scored):
+        if len(tasks) >= budget:
+            break
+        seed_idx = tile_idx % num_seeds
+        tasks.append(ViewportTask(seed_idx, x, y, w, h))
 
     return tasks
 

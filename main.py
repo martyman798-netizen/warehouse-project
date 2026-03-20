@@ -64,6 +64,88 @@ def _merge_observations(
 
 
 # ---------------------------------------------------------------------------
+# Settlement stats persistence
+# ---------------------------------------------------------------------------
+
+def _load_settlement_stats(round_id: str) -> dict[str, dict[str, dict[str, list]]]:
+    """Load settlement stats. Returns seed_str → {key → {food/pop/alive: [values]}}."""
+    if not os.path.exists(config.SETTLEMENT_STATS_FILE):
+        return {}
+    with open(config.SETTLEMENT_STATS_FILE) as f:
+        data = json.load(f)
+    if data.get("round_id") != round_id:
+        return {}
+    return data.get("stats", {})
+
+
+def _save_settlement_stats(round_id: str, stats: dict):
+    data = {"round_id": round_id, "stats": stats}
+    with open(config.SETTLEMENT_STATS_FILE, "w") as f:
+        json.dump(data, f)
+
+
+def _merge_settlement_stats(
+    existing: dict[str, dict[str, dict[str, list]]],
+    seed_str: str,
+    new_stats: dict[str, dict],
+):
+    """Accumulate per-settlement observations (food, pop, alive) per seed."""
+    if seed_str not in existing:
+        existing[seed_str] = {}
+    for key, vals in new_stats.items():
+        if key not in existing[seed_str]:
+            existing[seed_str][key] = {"food": [], "pop": [], "alive": []}
+        existing[seed_str][key]["food"].append(vals["food"])
+        existing[seed_str][key]["pop"].append(vals["pop"])
+        existing[seed_str][key]["alive"].append(vals["alive"])
+
+
+def _aggregate_settlement_stats(
+    raw_stats: dict[str, dict[str, dict[str, list]]],
+    seed_idx: int,
+    num_seeds: int,
+) -> dict[str, dict[str, float]]:
+    """
+    Aggregate raw per-seed stats into avg_food / avg_pop / frac_dead per cell.
+
+    Since all seeds share the same map, cross-seed stats are also included for
+    cells this seed did not directly observe.
+    """
+    merged: dict[str, dict[str, list]] = {}
+    # Own seed first (full weight — same as direct observation)
+    for key, vals in raw_stats.get(str(seed_idx), {}).items():
+        merged[key] = {
+            "food": list(vals.get("food", [])),
+            "pop":  list(vals.get("pop", [])),
+            "alive": list(vals.get("alive", [])),
+        }
+    # Cross-seed: include for cells not yet covered by this seed
+    for i in range(num_seeds):
+        if i == seed_idx:
+            continue
+        for key, vals in raw_stats.get(str(i), {}).items():
+            if key not in merged:
+                merged[key] = {"food": [], "pop": [], "alive": []}
+            merged[key]["food"].extend(vals.get("food", []))
+            merged[key]["pop"].extend(vals.get("pop", []))
+            merged[key]["alive"].extend(vals.get("alive", []))
+
+    agg: dict[str, dict[str, float]] = {}
+    for key, vals in merged.items():
+        foods = vals["food"]
+        pops  = vals["pop"]
+        alives = vals["alive"]
+        if not foods:
+            continue
+        agg[key] = {
+            "avg_food": sum(foods) / len(foods),
+            "avg_pop":  sum(pops)  / len(pops) if pops else 1.0,
+            "frac_dead": (len(alives) - sum(alives)) / len(alives) if alives else 0.0,
+        }
+    return agg
+
+
+# ---------------------------------------------------------------------------
 # Prediction persistence
 # ---------------------------------------------------------------------------
 
@@ -134,6 +216,7 @@ def cmd_observe(args, client: AstarIslandClient):
 
     # Load existing observations
     observations = _load_observations(round_id)
+    settlement_stats = _load_settlement_stats(round_id)
 
     def _execute_tasks(tasks: list, label: str) -> int:
         """Execute a list of ViewportTasks; return number actually executed."""
@@ -157,6 +240,20 @@ def cmd_observe(args, client: AstarIslandClient):
             )
             seed_str = str(task.seed_index)
             _merge_observations(observations, seed_str, new_obs)
+
+            # Extract settlement stats (food, pop, alive) for every settlement
+            # visible in this viewport — used to boost expansion/collapse signals
+            new_stats = {}
+            for s in result.get("settlements", []):
+                key = f"{s['x']},{s['y']}"
+                new_stats[key] = {
+                    "food": s.get("food", 0.5),
+                    "pop":  s.get("population", 1.0),
+                    "alive": 1 if s.get("alive", True) else 0,
+                }
+            if new_stats:
+                _merge_settlement_stats(settlement_stats, seed_str, new_stats)
+
             print(f"done  ({result['queries_used']}/{result['queries_max']} queries used)")
             executed += 1
         return executed
@@ -166,6 +263,7 @@ def cmd_observe(args, client: AstarIslandClient):
     print(f"\nPhase 1: {len(phase1_tasks)} coverage tiles")
     p1_done = _execute_tasks(phase1_tasks, "P1")
     _save_observations(round_id, observations)
+    _save_settlement_stats(round_id, settlement_stats)
 
     phase2_budget = remaining - p1_done
     if phase2_budget <= 0:
@@ -214,6 +312,7 @@ def cmd_observe(args, client: AstarIslandClient):
         print(strategy.describe_plan(phase2_tasks))
         _execute_tasks(phase2_tasks, "P2")
         _save_observations(round_id, observations)
+        _save_settlement_stats(round_id, settlement_stats)
 
     # Print per-seed observation coverage
     for seed_idx in range(num_seeds):
@@ -236,6 +335,7 @@ def cmd_predict(args, client: AstarIslandClient):
     print(f"  Map: {map_w}×{map_h}, {num_seeds} seeds")
 
     observations = _load_observations(round_id)
+    raw_stats = _load_settlement_stats(round_id)
 
     predictions = {}
     for seed_idx, state in enumerate(initial_states):
@@ -250,13 +350,19 @@ def cmd_predict(args, client: AstarIslandClient):
             if i != seed_idx
         ]
         n_cross = sum(len(v) for od in cross_seed_obs for v in od.values())
-        print(f"  Seed {seed_idx}: computing prediction ({n_obs} own + {n_cross} cross-seed observations)...", end=" ", flush=True)
+
+        # Settlement stats: aggregated food/pop/alive, own seed + cross-seed
+        agg_stats = _aggregate_settlement_stats(raw_stats, seed_idx, num_seeds)
+        n_stats = len(agg_stats)
+        print(f"  Seed {seed_idx}: computing prediction ({n_obs} own + {n_cross} cross-seed obs, "
+              f"{n_stats} settlement-stat cells)...", end=" ", flush=True)
 
         pred_array = terrain_model.compute_prediction(
             state["grid"],
             seed_obs,
             state.get("settlements"),
             cross_seed_obs=cross_seed_obs,
+            settlement_stats=agg_stats,
         )
 
         # Validate: probabilities must sum to 1.0 per cell

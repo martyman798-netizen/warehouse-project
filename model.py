@@ -233,6 +233,7 @@ def compute_prediction(
     initial_settlements: list[dict] | None = None,
     cross_seed_obs: list[dict[str, list[int]]] | None = None,
     cross_seed_weight: float = 0.4,
+    settlement_stats: dict[str, dict[str, float]] | None = None,
 ) -> np.ndarray:
     """
     Build H×W×6 prediction tensor for one seed.
@@ -246,6 +247,10 @@ def compute_prediction(
                         share the same initial_grid so their observations give
                         additional samples of the same stochastic process
         cross_seed_weight: discount factor applied to cross-seed samples (0–1)
+        settlement_stats: aggregated per-settlement stats from simulate responses;
+                          "x,y" → {avg_food, avg_pop, frac_dead} — used to boost
+                          expansion signals for adjacent Plains and to adjust
+                          settlement collapse probability
 
     Returns:
         np.ndarray of shape (H, W, 6) with probabilities summing to 1.0 per cell
@@ -281,30 +286,55 @@ def compute_prediction(
 
             prediction[y, x] = posterior
 
-    # Spatial neighbor smoothing: pull unobserved cells toward their observed neighbors.
-    # A plains cell surrounded by observed settlements should have higher P(Settlement)
-    # than a prior-only estimate gives. Only affects cells with no direct observations.
-    all_obs_keys = set(observations.keys())
-    if cross_seed_obs:
-        for od in cross_seed_obs:
-            all_obs_keys |= set(od.keys())
-
-    smoothed = prediction.copy()
-    SMOOTH_WEIGHT = 0.25
-    for y in range(H):
-        for x in range(W):
-            if f"{x},{y}" in all_obs_keys:
-                continue  # has direct or cross-seed observations — trust the posterior
-            neighbor_preds = []
-            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                nx, ny = x + dx, y + dy
-                if 0 <= nx < W and 0 <= ny < H and f"{nx},{ny}" in all_obs_keys:
-                    neighbor_preds.append(prediction[ny, nx])
-            if not neighbor_preds:
+    # Settlement-stats adjustments:
+    # Use observed food/pop/alive to refine settlement survival and expansion signals.
+    # These go BEYOND what terrain-class observations capture, because:
+    #  - A stressed settlement (low food) is more likely to collapse in unseen sim runs.
+    #  - A thriving settlement (high pop × food) is likely to expand to adjacent Plains.
+    if settlement_stats:
+        for key, stats in settlement_stats.items():
+            try:
+                sx, sy = map(int, key.split(","))
+            except ValueError:
                 continue
-            avg_neighbor = np.mean(neighbor_preds, axis=0)
-            smoothed[y, x] = (1.0 - SMOOTH_WEIGHT) * prediction[y, x] + SMOOTH_WEIGHT * avg_neighbor
-    prediction = smoothed
+            if not (0 <= sx < W and 0 <= sy < H):
+                continue
+
+            avg_food  = stats.get("avg_food",  0.5)
+            avg_pop   = stats.get("avg_pop",   1.0)
+            frac_dead = stats.get("frac_dead", 0.0)
+
+            terrain = initial_grid[sy][sx]
+
+            # --- Adjust collapse probability for settlement / port cells ---
+            if terrain in {config.TERRAIN_SETTLEMENT, config.TERRAIN_PORT}:
+                # Fraction of observed runs where this settlement was dead at year 50
+                if frac_dead > 0:
+                    collapse_boost = min(0.25, frac_dead * 0.35)
+                    prediction[sy, sx, R] += collapse_boost
+                    if terrain == config.TERRAIN_SETTLEMENT:
+                        prediction[sy, sx, S] = max(0.01, prediction[sy, sx, S] - collapse_boost)
+                    else:
+                        prediction[sy, sx, P] = max(0.01, prediction[sy, sx, P] - collapse_boost)
+
+                # Very low food → stressed even in surviving runs
+                if avg_food < 0.3:
+                    food_risk = (0.3 - avg_food) / 0.3 * 0.10
+                    prediction[sy, sx, R] += food_risk
+                    prediction[sy, sx, S] = max(0.01, prediction[sy, sx, S] - food_risk * 0.7)
+                    prediction[sy, sx, P] = max(0.01, prediction[sy, sx, P] - food_risk * 0.3)
+
+                # --- Expansion signal for adjacent Plains cells ---
+                # High population × ample food (net of mortality) → expansion likely
+                expansion_score = avg_pop * max(0.0, avg_food - 0.3) * (1.0 - frac_dead)
+                if expansion_score > 0.5:
+                    boost = min(0.12, (expansion_score - 0.5) * 0.08)
+                    for dx, dy in [(-1,0),(1,0),(0,-1),(0,1),(-1,-1),(1,-1),(-1,1),(1,1)]:
+                        nx, ny = sx + dx, sy + dy
+                        if 0 <= nx < W and 0 <= ny < H:
+                            if initial_grid[ny][nx] in {config.TERRAIN_PLAINS, config.TERRAIN_EMPTY}:
+                                prediction[ny, nx, S] += boost
+                                prediction[ny, nx, E] = max(0.01, prediction[ny, nx, E] - boost)
 
     # Apply minimum probability floor: never assign 0.0 to any class.
     # Zero probability causes infinite KL divergence if ground truth differs.
