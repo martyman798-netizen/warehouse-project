@@ -264,7 +264,7 @@ def _update_with_observations(
     elif n_eff >= 3:
         alpha_strength = 1.0
     else:
-        alpha_strength = 2.0
+        alpha_strength = 1.0  # was 2.0 — prior was drowning out single observations
 
     alpha = prior * alpha_strength
     posterior = alpha + counts
