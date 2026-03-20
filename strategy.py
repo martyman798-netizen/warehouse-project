@@ -294,10 +294,15 @@ def _compute_cell_entropies(
     observations: dict[str, list[int]],
     map_w: int,
     map_h: int,
+    cross_seed_obs: list[dict[str, list[int]]] | None = None,
 ) -> "np.ndarray":
     """
     Compute Shannon entropy of the posterior distribution for every cell.
     Cells with high entropy are most uncertain and benefit most from more observations.
+
+    cross_seed_obs: observation dicts from OTHER seeds (discounted via cross_weight).
+    Including these gives a more accurate entropy estimate — cells already well-understood
+    via cross-seed pooling won't be wastefully re-targeted by Phase 2.
     """
     import numpy as np
     import model as terrain_model
@@ -313,8 +318,12 @@ def _compute_cell_entropies(
         for x in range(map_w):
             prior = terrain_model._compute_rule_prior(initial_grid, x, y, settlement_positions)
             obs = observations.get(f"{x},{y}", [])
-            if obs:
-                posterior = terrain_model._update_with_observations(prior, obs)
+            cross_obs: list[int] = []
+            if cross_seed_obs:
+                for od in cross_seed_obs:
+                    cross_obs.extend(od.get(f"{x},{y}", []))
+            if obs or cross_obs:
+                posterior = terrain_model._update_with_observations(prior, obs, cross_obs or None)
             else:
                 posterior = prior
             posterior = np.clip(posterior, 1e-9, None)
@@ -330,6 +339,7 @@ def plan_phase2_by_entropy(
     map_w: int,
     map_h: int,
     seed_idx: int,
+    cross_seed_obs: list[dict[str, list[int]]] | None = None,
 ) -> list[ViewportTask]:
     """
     Plan Phase 2 viewports targeting highest-entropy cells.
@@ -337,13 +347,17 @@ def plan_phase2_by_entropy(
     After Phase 1 coverage, compute per-cell entropy and greedily place
     viewports around the most uncertain cells. This focuses remaining
     budget where observations reduce uncertainty most.
+
+    cross_seed_obs: other seeds' observations, used to get an accurate
+    entropy estimate so we don't re-target cells already understood via
+    cross-seed pooling.
     """
     import numpy as np
 
     if phase2_budget <= 0:
         return []
 
-    entropies = _compute_cell_entropies(initial_grid, observations, map_w, map_h)
+    entropies = _compute_cell_entropies(initial_grid, observations, map_w, map_h, cross_seed_obs)
     tasks: list[ViewportTask] = []
     covered = np.zeros((map_h, map_w), dtype=bool)
 
