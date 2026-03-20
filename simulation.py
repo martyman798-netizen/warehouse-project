@@ -23,7 +23,7 @@ def run_simulation(
     initial_grid: list[list[int]],
     initial_settlements: list[dict],
     rng: random.Random,
-    expansion_rate: float = 0.05,
+    expansion_rate: float = 0.08,
     winter_severity: float = 0.08,
 ) -> tuple[list[list[int]], list[dict]]:
     """
