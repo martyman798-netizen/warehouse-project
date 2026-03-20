@@ -278,6 +278,7 @@ def compute_prediction(
     cross_seed_obs: list[dict[str, list[int]]] | None = None,
     cross_seed_weight: float = 0.4,
     settlement_stats: dict[str, dict[str, float]] | None = None,
+    local_mc_prior: np.ndarray | None = None,
 ) -> np.ndarray:
     """
     Build H×W×6 prediction tensor for one seed.
@@ -295,6 +296,11 @@ def compute_prediction(
                           "x,y" → {avg_food, avg_pop, frac_dead} — used to boost
                           expansion signals for adjacent Plains and to adjust
                           settlement collapse probability
+        local_mc_prior: optional H×W×6 array from local Monte Carlo simulation
+                        (simulation.compute_ground_truth).  When provided this
+                        replaces the learned/rule-based prior — it captures the
+                        full game mechanics and is a much stronger starting point.
+                        API observations then refine it via Bayesian update.
 
     Returns:
         np.ndarray of shape (H, W, 6) with probabilities summing to 1.0 per cell
@@ -321,7 +327,15 @@ def compute_prediction(
                 for other_obs in cross_seed_obs:
                     cross_obs.extend(other_obs.get(key, []))
 
-            prior = _compute_rule_prior(initial_grid, x, y, settlement_positions)
+            if local_mc_prior is not None:
+                # Local MC simulation provides a full-mechanics prior — use it
+                # directly.  It captures expansion, conflict, food dynamics, etc.
+                # far better than any learned or rule-based approximation.
+                prior = local_mc_prior[y, x].copy()
+                prior = np.clip(prior, 1e-6, None)
+                prior /= prior.sum()
+            else:
+                prior = _compute_rule_prior(initial_grid, x, y, settlement_positions)
 
             if obs or cross_obs:
                 posterior = _update_with_observations(prior, obs, cross_obs or None, cross_seed_weight)
@@ -368,6 +382,14 @@ def compute_prediction(
                     prediction[sy, sx, S] = max(0.01, prediction[sy, sx, S] - food_risk * 0.7)
                     prediction[sy, sx, P] = max(0.01, prediction[sy, sx, P] - food_risk * 0.3)
 
+                # Pop/food imbalance: high population draining low food = imminent collapse
+                # Mirrors the simulation's food drain = 0.10/year vs food income ~ 0.08 + forests
+                stress_ratio = avg_pop / max(0.1, avg_food)
+                if stress_ratio > 4.0 and avg_food < 0.4:
+                    crisis_boost = min(0.10, (stress_ratio - 4.0) * 0.02)
+                    prediction[sy, sx, R] += crisis_boost
+                    prediction[sy, sx, S] = max(0.01, prediction[sy, sx, S] - crisis_boost)
+
                 # --- Expansion signal for adjacent Plains cells ---
                 # High population × ample food (net of mortality) → expansion likely
                 expansion_score = avg_pop * max(0.0, avg_food - 0.3) * (1.0 - frac_dead)
@@ -393,7 +415,8 @@ def compute_prediction(
 
     # Apply minimum probability floor: never assign 0.0 to any class.
     # Zero probability causes infinite KL divergence if ground truth differs.
-    prediction = np.clip(prediction, 0.002, None)
+    # Game docs explicitly recommend 0.01 as the minimum safe floor.
+    prediction = np.clip(prediction, 0.01, None)
     # Renormalize so each cell's distribution still sums to 1.0
     prediction /= prediction.sum(axis=2, keepdims=True)
 
