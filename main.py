@@ -245,6 +245,28 @@ def cmd_submit(args, client: AstarIslandClient):
             print(f"ERROR: {e}")
 
 
+def cmd_score(args, client: AstarIslandClient):
+    """Show your round scores and the leaderboard."""
+    print("Your rounds:")
+    try:
+        my_rounds = client.get_my_rounds()
+        if not my_rounds:
+            print("  No rounds found.")
+        for r in my_rounds:
+            print(f"  Round {r.get('round_number','?'):3}:  score={r.get('score','?')}  id={r['id']}")
+    except Exception as e:
+        print(f"  ERROR: {e}")
+
+    print()
+    print("Leaderboard (top 10):")
+    try:
+        lb = client.get_leaderboard()
+        for i, entry in enumerate(lb[:10], 1):
+            print(f"  #{i:2d}  {str(entry.get('team_name','?')):<22}  score={entry.get('score','?')}")
+    except Exception as e:
+        print(f"  ERROR: {e}")
+
+
 def cmd_run(args, client: AstarIslandClient):
     """observe + predict (review predictions.json before submitting)."""
     cmd_observe(args, client)
@@ -270,6 +292,9 @@ def main():
 
     # status
     subparsers.add_parser("status", help="Show query budget for active round")
+
+    # score
+    subparsers.add_parser("score", help="Show your round scores and leaderboard")
 
     # observe
     p_obs = subparsers.add_parser("observe", help="Execute observations and save to file")
@@ -301,6 +326,7 @@ def main():
     dispatch = {
         "rounds": cmd_rounds,
         "status": cmd_status,
+        "score": cmd_score,
         "observe": cmd_observe,
         "predict": cmd_predict,
         "submit": cmd_submit,
