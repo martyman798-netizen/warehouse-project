@@ -324,6 +324,8 @@ def cmd_observe(args, client: AstarIslandClient):
 
 def cmd_predict(args, client: AstarIslandClient):
     """Build prediction tensors from observations and save."""
+    from simulation import compute_ground_truth
+
     round_id = args.round_id
 
     print(f"Fetching round {round_id}...")
@@ -336,6 +338,17 @@ def cmd_predict(args, client: AstarIslandClient):
 
     observations = _load_observations(round_id)
     raw_stats = _load_settlement_stats(round_id)
+
+    # Run local Monte Carlo simulation to build a physics-based prior.
+    # All seeds share the same initial grid so we only need one MC run.
+    # This prior encodes the full game mechanics (food, conflict, winter,
+    # reclamation) far better than the learned 13-feature softmax.
+    first_state = initial_states[0]
+    first_setts = first_state.get("settlements", [])
+    n_mc = getattr(args, "mc_runs", 100)
+    print(f"  Running local MC simulation ({n_mc} runs)...", end=" ", flush=True)
+    local_mc_prior = compute_ground_truth(first_state["grid"], first_setts, n_runs=n_mc)
+    print("done")
 
     predictions = {}
     for seed_idx, state in enumerate(initial_states):
@@ -363,6 +376,7 @@ def cmd_predict(args, client: AstarIslandClient):
             state.get("settlements"),
             cross_seed_obs=cross_seed_obs,
             settlement_stats=agg_stats,
+            local_mc_prior=local_mc_prior,
         )
 
         # Validate: probabilities must sum to 1.0 per cell
@@ -541,6 +555,8 @@ def main():
     # predict
     p_pred = subparsers.add_parser("predict", help="Build prediction tensors from observations")
     p_pred.add_argument("--round-id", required=True, help="Round UUID")
+    p_pred.add_argument("--mc-runs", type=int, default=100, dest="mc_runs",
+                        help="Local MC simulation runs for prior (default: 100)")
 
     # submit
     p_sub = subparsers.add_parser("submit", help="Submit predictions to API")
@@ -559,6 +575,8 @@ def main():
     p_run = subparsers.add_parser("run", help="observe + predict + submit in one go")
     p_run.add_argument("--round-id", required=True, help="Round UUID")
     p_run.add_argument("--budget", type=int, default=None, help="Max queries to use")
+    p_run.add_argument("--mc-runs", type=int, default=100, dest="mc_runs",
+                       help="Local MC simulation runs for prior (default: 100)")
 
     args = parser.parse_args()
 
