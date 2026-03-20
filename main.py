@@ -103,38 +103,18 @@ def _merge_settlement_stats(
 def _aggregate_settlement_stats(
     raw_stats: dict[str, dict[str, dict[str, list]]],
     seed_idx: int,
-    num_seeds: int,
 ) -> dict[str, dict[str, float]]:
     """
     Aggregate raw per-seed stats into avg_food / avg_pop / frac_dead per cell.
 
-    Since all seeds share the same map, cross-seed stats are also included for
-    cells this seed did not directly observe.
+    Uses only this seed's own stats — each seed has its own independent map,
+    so cross-seed settlement positions don't correspond to each other.
     """
-    merged: dict[str, dict[str, list]] = {}
-    # Own seed first (full weight — same as direct observation)
-    for key, vals in raw_stats.get(str(seed_idx), {}).items():
-        merged[key] = {
-            "food": list(vals.get("food", [])),
-            "pop":  list(vals.get("pop", [])),
-            "alive": list(vals.get("alive", [])),
-        }
-    # Cross-seed: include for cells not yet covered by this seed
-    for i in range(num_seeds):
-        if i == seed_idx:
-            continue
-        for key, vals in raw_stats.get(str(i), {}).items():
-            if key not in merged:
-                merged[key] = {"food": [], "pop": [], "alive": []}
-            merged[key]["food"].extend(vals.get("food", []))
-            merged[key]["pop"].extend(vals.get("pop", []))
-            merged[key]["alive"].extend(vals.get("alive", []))
-
     agg: dict[str, dict[str, float]] = {}
-    for key, vals in merged.items():
-        foods = vals["food"]
-        pops  = vals["pop"]
-        alives = vals["alive"]
+    for key, vals in raw_stats.get(str(seed_idx), {}).items():
+        foods = vals.get("food", [])
+        pops  = vals.get("pop", [])
+        alives = vals.get("alive", [])
         if not foods:
             continue
         agg[key] = {
@@ -277,8 +257,7 @@ def cmd_observe(args, client: AstarIslandClient):
         seed_total_entropy = []
         for seed_idx, state in enumerate(initial_states):
             seed_obs = observations.get(str(seed_idx), {})
-            cross = [observations.get(str(i), {}) for i in range(num_seeds) if i != seed_idx]
-            H_grid = strategy._compute_cell_entropies(state["grid"], seed_obs, map_w, map_h, cross)
+            H_grid = strategy._compute_cell_entropies(state["grid"], seed_obs, map_w, map_h, None)
             seed_total_entropy.append(float(H_grid.sum()))
 
         total_H = sum(seed_total_entropy) or 1
@@ -298,11 +277,10 @@ def cmd_observe(args, client: AstarIslandClient):
             alloc = raw_allocs[seed_idx]
             if alloc <= 0:
                 continue
-            cross = [observations.get(str(i), {}) for i in range(num_seeds) if i != seed_idx]
             tasks = strategy.plan_phase2_by_entropy(
                 state["grid"], seed_obs, alloc,
                 map_w, map_h, seed_idx,
-                cross_seed_obs=cross,
+                cross_seed_obs=None,  # each seed has its own independent map
             )
             phase2_tasks.extend(tasks)
 
@@ -339,16 +317,16 @@ def cmd_predict(args, client: AstarIslandClient):
     observations = _load_observations(round_id)
     raw_stats = _load_settlement_stats(round_id)
 
-    # Run local Monte Carlo simulation to build a physics-based prior.
-    # All seeds share the same initial grid so we only need one MC run.
-    # This prior encodes the full game mechanics (food, conflict, winter,
-    # reclamation) far better than the learned 13-feature softmax.
-    first_state = initial_states[0]
-    first_setts = first_state.get("settlements", [])
+    # Build per-seed MC priors — each seed has its own independent map,
+    # so we must run compute_ground_truth separately for each seed.
     n_mc = getattr(args, "mc_runs", 100)
-    print(f"  Running local MC simulation ({n_mc} runs)...", end=" ", flush=True)
-    local_mc_prior = compute_ground_truth(first_state["grid"], first_setts, n_runs=n_mc)
-    print("done")
+    local_mc_priors = []
+    for seed_idx, state in enumerate(initial_states):
+        print(f"  Seed {seed_idx}: running MC simulation ({n_mc} runs)...", end=" ", flush=True)
+        setts = state.get("settlements", [])
+        prior = compute_ground_truth(state["grid"], setts, n_runs=n_mc, base_seed=seed_idx * n_mc)
+        local_mc_priors.append(prior)
+        print("done")
 
     predictions = {}
     for seed_idx, state in enumerate(initial_states):
@@ -356,27 +334,19 @@ def cmd_predict(args, client: AstarIslandClient):
         seed_obs = observations.get(seed_str, {})
         n_obs = sum(len(v) for v in seed_obs.values())
 
-        # Cross-seed observations: collect obs from all OTHER seeds
-        cross_seed_obs = [
-            observations.get(str(i), {})
-            for i in range(num_seeds)
-            if i != seed_idx
-        ]
-        n_cross = sum(len(v) for od in cross_seed_obs for v in od.values())
-
-        # Settlement stats: aggregated food/pop/alive, own seed + cross-seed
-        agg_stats = _aggregate_settlement_stats(raw_stats, seed_idx, num_seeds)
+        # Settlement stats: own seed only (each seed has its own independent map)
+        agg_stats = _aggregate_settlement_stats(raw_stats, seed_idx)
         n_stats = len(agg_stats)
-        print(f"  Seed {seed_idx}: computing prediction ({n_obs} own + {n_cross} cross-seed obs, "
+        print(f"  Seed {seed_idx}: computing prediction ({n_obs} obs, "
               f"{n_stats} settlement-stat cells)...", end=" ", flush=True)
 
         pred_array = terrain_model.compute_prediction(
             state["grid"],
             seed_obs,
             state.get("settlements"),
-            cross_seed_obs=cross_seed_obs,
+            cross_seed_obs=None,  # each seed has its own independent map
             settlement_stats=agg_stats,
-            local_mc_prior=local_mc_prior,
+            local_mc_prior=local_mc_priors[seed_idx],
         )
 
         # Validate: probabilities must sum to 1.0 per cell
