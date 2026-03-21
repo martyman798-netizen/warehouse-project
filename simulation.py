@@ -223,6 +223,30 @@ def run_simulation(
                 grid[sy][sx] = config.TERRAIN_RUIN
 
         # ------------------------------------------------------------------ #
+        # Territorial conflict (mild-winter warfare)                           #
+        # In mild winters settlements have surplus food and wage territorial   #
+        # wars for expansion.  In harsh winters everyone focuses on survival.  #
+        # conflict_mortality ∝ max(0, 0.025 - winter_severity * 0.25):        #
+        #   ws=0.054 (mild)  → ~1.15%/yr → ~45% 50-yr survival               #
+        #   ws≥0.10  (harsh) → 0%/yr    → no additional deaths                #
+        # ------------------------------------------------------------------ #
+        conflict_mortality = max(0.0, 0.025 - winter_severity * 0.25)
+        if conflict_mortality > 0:
+            for (sx, sy), s in list(setts.items()):
+                if s["alive"] and rng.random() < conflict_mortality:
+                    s["alive"] = False
+                    s["pop"]   = 0.0
+                    s["food"]  = 0.0
+                    # Convert directly to empty/forest — skips Ruin so the
+                    # Environment reclaim path does not undo this death.
+                    r = rng.random()
+                    grid[sy][sx] = (
+                        config.TERRAIN_EMPTY  if r < 0.55 else
+                        config.TERRAIN_FOREST if r < 0.95 else
+                        config.TERRAIN_PLAINS
+                    )
+
+        # ------------------------------------------------------------------ #
         # Environment                                                          #
         # Ruins reclaimed by nearby thriving settlements.                      #
         # Coastal ruins can be restored as ports.                             #
