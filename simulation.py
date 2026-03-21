@@ -324,6 +324,77 @@ def infer_params_from_stats(
     return round(expansion_rate, 4), round(winter_severity, 4), round(food_drain, 4)
 
 
+def infer_params_from_obs(
+    initial_grid: list[list[int]],
+    observations: dict[str, list[int]],
+) -> tuple[float, float, float]:
+    """
+    Infer round-specific simulation parameters from terrain observations of
+    initial settlement/port cells.
+
+    infer_params_from_stats is biased because dead settlements are never
+    returned by the API — we never see alive=False.  This function instead
+    looks at what terrain class cells that were initially Settlement/Port show
+    after the simulation ran: if the cell is now Empty/Ruin/Forest, the
+    settlement collapsed in that run.  This gives a direct collapse signal
+    uncorrupted by the missing-dead-settlement bias.
+
+    Because we observe only one run per cell (Phase 1 full-coverage), the
+    single-run collapse rate underestimates the true expected collapse rate.
+    Empirically across completed rounds the true collapse rate is ~1.5× the
+    single-run rate, so we apply that scaling before mapping to harshness.
+
+    Args:
+        initial_grid: H×W terrain grid (initial state)
+        observations: "x,y" → [class_int] from Phase 1 observations
+
+    Returns:
+        (expansion_rate, winter_severity, food_drain)
+    """
+    from collections import Counter
+
+    n_collapsed = 0
+    n_survived = 0
+    for y, row in enumerate(initial_grid):
+        for x, val in enumerate(row):
+            if val not in {config.TERRAIN_SETTLEMENT, config.TERRAIN_PORT}:
+                continue
+            key = f"{x},{y}"
+            obs = observations.get(key, [])
+            if not obs:
+                continue
+            most_common = Counter(obs).most_common(1)[0][0]
+            if most_common in {config.CLASS_SETTLEMENT, config.CLASS_PORT}:
+                n_survived += 1
+            else:
+                n_collapsed += 1
+
+    total_obs = n_collapsed + n_survived
+    if total_obs < 3:
+        # Not enough settlement observations — fall back to moderate defaults
+        return 0.10, 0.06, 0.03
+
+    observed_collapse_rate = n_collapsed / total_obs
+
+    # Scale observed single-run collapse rate to approximate the true expected
+    # collapse rate (single-run observations underestimate the true average by
+    # roughly 1.5× based on comparison with analysis ground truth).
+    true_collapse_est = min(1.0, observed_collapse_rate * 1.5)
+
+    # harshness ∈ [0, 1]: 0 = very mild (growth), 1 = catastrophic collapse
+    # 5% collapse → harshness=0, 70%+ collapse → harshness=1
+    harshness = max(0.0, min(1.0, (true_collapse_est - 0.05) / 0.65))
+
+    # Wider parameter range than infer_params_from_stats to reach true extremes:
+    #   Mild (harshness=0):  er=0.12, ws=0.04, fd=0.02
+    #   Harsh (harshness=1): er=0.02, ws=0.15, fd=0.08
+    expansion_rate  = 0.12 - harshness * 0.10   # [0.02, 0.12]
+    winter_severity = 0.04 + harshness * 0.11   # [0.04, 0.15]
+    food_drain      = 0.02 + harshness * 0.06   # [0.02, 0.08]
+
+    return round(expansion_rate, 4), round(winter_severity, 4), round(food_drain, 4)
+
+
 def compute_ground_truth(
     initial_grid: list[list[int]],
     initial_settlements: list[dict],

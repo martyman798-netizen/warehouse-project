@@ -231,6 +231,8 @@ def _update_with_observations(
     observed_classes: list[int],
     cross_seed_classes: list[int] | None = None,
     cross_weight: float = 0.4,
+    initial_terrain: int | None = None,
+    n_mc_runs: int = 0,
 ) -> np.ndarray:
     """
     Bayesian (Dirichlet-multinomial) update of prior given observed terrain classes.
@@ -240,6 +242,12 @@ def _update_with_observations(
         observed_classes: observations from this seed
         cross_seed_classes: observations from other seeds (discounted by cross_weight)
         cross_weight: weight applied to cross-seed observations (0–1)
+        initial_terrain: raw terrain value of this cell at t=0
+        n_mc_runs: number of MC simulation runs used to build the prior.
+                   When >0 the prior is treated as n_mc_runs pseudo-observations,
+                   so 1 real API observation is correctly weighted against the full
+                   MC ensemble (e.g. with n_mc_runs=100 one API obs shifts the
+                   posterior by only ~1%).  When 0, uses legacy alpha_strength heuristic.
 
     More observations → observed frequencies dominate the prior.
     """
@@ -255,22 +263,28 @@ def _update_with_observations(
         cs_counts = np.bincount(cross_seed_classes, minlength=N).astype(float)
         counts += cs_counts * cross_weight
 
-    # Effective observation count for alpha_strength calculation
-    n_eff = n_obs + n_cross * cross_weight
-
-    # Prior strength: weaken prior relative to observations.
-    # Each API observation is a real game sample — it should carry substantial
-    # weight even when we only have 1 per cell (which is the common case after
-    # Phase 1 full-coverage tiling).  A lower alpha_strength lets real data
-    # override a potentially mis-calibrated MC/learned prior more easily.
-    if n_eff >= 5:
-        alpha_strength = 0.3
-    elif n_eff >= 2:
-        alpha_strength = 0.5
+    if n_mc_runs > 0:
+        # MC-weighted update: treat the MC prior as n_mc_runs pseudo-counts.
+        # This is the statistically correct approach when the prior came from
+        # n_mc_runs independent simulations — each real API call is 1 additional
+        # run, so it should be weighted as 1 / n_mc_runs relative to the prior.
+        # For stochastic cells (Settlement/Port/Ruin), where a single API call
+        # may show a lucky survival in a mostly-collapse round, this prevents
+        # the one lucky run from overwhelming 100 MC predictions of collapse.
+        alpha = prior * float(n_mc_runs)
     else:
-        alpha_strength = 0.7  # single observation: prior still matters but not dominant
+        # Legacy path (no MC prior): use alpha_strength heuristic.
+        _STOCHASTIC = {config.TERRAIN_SETTLEMENT, config.TERRAIN_PORT, config.TERRAIN_RUIN}
+        is_stochastic = initial_terrain in _STOCHASTIC if initial_terrain is not None else False
+        n_eff = n_obs + n_cross * cross_weight
+        if n_eff >= 5:
+            alpha_strength = 0.5 if is_stochastic else 0.2
+        elif n_eff >= 2:
+            alpha_strength = 0.7 if is_stochastic else 0.35
+        else:
+            alpha_strength = 1.5 if is_stochastic else 0.5
+        alpha = prior * alpha_strength
 
-    alpha = prior * alpha_strength
     posterior = alpha + counts
     return posterior / posterior.sum()
 
@@ -283,6 +297,7 @@ def compute_prediction(
     cross_seed_weight: float = 0.4,
     settlement_stats: dict[str, dict[str, float]] | None = None,
     local_mc_prior: np.ndarray | None = None,
+    n_mc_runs: int = 0,
 ) -> np.ndarray:
     """
     Build H×W×6 prediction tensor for one seed.
@@ -359,7 +374,12 @@ def compute_prediction(
                 prior = _compute_rule_prior(initial_grid, x, y, settlement_positions)
 
             if obs or cross_obs:
-                posterior = _update_with_observations(prior, obs, cross_obs or None, cross_seed_weight)
+                _n_mc = n_mc_runs if local_mc_prior is not None else 0
+                posterior = _update_with_observations(
+                    prior, obs, cross_obs or None, cross_seed_weight,
+                    initial_terrain=initial_grid[y][x],
+                    n_mc_runs=_n_mc,
+                )
             else:
                 posterior = prior
 
