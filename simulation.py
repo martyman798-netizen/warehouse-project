@@ -270,11 +270,68 @@ def run_simulation(
     return grid, result_settlements
 
 
+def infer_params_from_stats(
+    seed_stats: dict[str, dict[str, list]],
+) -> tuple[float, float, float]:
+    """
+    Infer round-specific simulation parameters from observed settlement stats.
+
+    Observed food levels and survival rates reveal whether this is a mild
+    (growth) round or a harsh (collapse) round.  The hidden parameters change
+    every round, so we adapt dynamically rather than using fixed calibrated
+    values.
+
+    Args:
+        seed_stats: dict mapping settlement key → {food: [...], pop: [...], alive: [...]}
+                    as stored in settlement_stats.json for a single seed.
+
+    Returns:
+        (expansion_rate, winter_severity, food_drain) — best-fit estimate
+        for this round.
+    """
+    alive_foods: list[float] = []
+    n_alive = 0
+    n_dead = 0
+    for vals in seed_stats.values():
+        for a, f in zip(vals.get("alive", []), vals.get("food", [])):
+            if a:
+                alive_foods.append(float(f))
+                n_alive += 1
+            else:
+                n_dead += 1
+
+    total = n_alive + n_dead
+    if total == 0:
+        # No data — return calibrated defaults (moderate round)
+        return 0.10, 0.06, 0.03
+
+    survival_rate = n_alive / total
+    avg_food = float(np.mean(alive_foods)) if alive_foods else 0.0
+
+    # harshness ∈ [0, 1]: 0 = very mild (growth round), 1 = catastrophic collapse
+    # Weighted equally between survival signal and food signal.
+    food_signal = max(0.0, min(1.0, 1.0 - avg_food / 0.9))
+    surv_signal = max(0.0, min(1.0, 1.0 - survival_rate))
+    harshness = 0.5 * surv_signal + 0.5 * food_signal
+
+    # Map harshness linearly to parameter ranges derived from analysis:
+    #   Mild rounds  (R7-R9, 3.7x growth):  ws≈0.04, fd≈0.02, er≈0.12
+    #   Harsh rounds (R10, 77% collapse):   ws≈0.12, fd≈0.06, er≈0.07
+    expansion_rate  = 0.12 - harshness * 0.07   # [0.05, 0.12]
+    winter_severity = 0.04 + harshness * 0.11   # [0.04, 0.15]
+    food_drain      = 0.02 + harshness * 0.06   # [0.02, 0.08]
+
+    return round(expansion_rate, 4), round(winter_severity, 4), round(food_drain, 4)
+
+
 def compute_ground_truth(
     initial_grid: list[list[int]],
     initial_settlements: list[dict],
     n_runs: int,
     base_seed: int = 0,
+    expansion_rate: float = 0.10,
+    winter_severity: float = 0.06,
+    food_drain: float = 0.03,
 ) -> np.ndarray:
     """
     Compute H×W×6 probability tensor from n_runs independent MC simulations.
@@ -288,6 +345,9 @@ def compute_ground_truth(
         initial_settlements: list of settlement dicts with {x, y, has_port, ...}
         n_runs:              number of MC simulations (50 is fast; 100+ is more accurate)
         base_seed:           seed offset so different calls stay independent
+        expansion_rate:      base probability of expansion per year (inferred per round)
+        winter_severity:     mean food drain per winter (inferred per round)
+        food_drain:          annual maintenance drain (inferred per round)
 
     Returns:
         np.ndarray of shape (H, W, 6), probabilities summing to 1.0 per cell
@@ -298,7 +358,12 @@ def compute_ground_truth(
 
     for i in range(n_runs):
         rng = random.Random(base_seed + i)
-        grid_after, _ = run_simulation(initial_grid, initial_settlements, rng)
+        grid_after, _ = run_simulation(
+            initial_grid, initial_settlements, rng,
+            expansion_rate=expansion_rate,
+            winter_severity=winter_severity,
+            food_drain=food_drain,
+        )
         for y in range(H):
             for x in range(W):
                 cls = config.TERRAIN_TO_CLASS.get(grid_after[y][x], config.CLASS_EMPTY)

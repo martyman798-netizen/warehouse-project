@@ -109,10 +109,13 @@ def main():
         })
     print(f"  {len(datasets)} datasets loaded\n")
 
-    # Parameter grid
-    expansion_rates  = [0.05, 0.08, 0.10, 0.12, 0.15, 0.18, 0.20]
-    winter_severities = [0.04, 0.06, 0.08, 0.10]
-    food_drains       = [0.03, 0.04, 0.05, 0.06]
+    # Parameter grid — extended to cover both mild growth rounds (R7–R9, 3.7× expansion)
+    # and harsh collapse rounds (R10, 77% settlement mortality).
+    # Red thread: old grid didn't include food_drain=0.02 (below our min) or
+    # winter_severity > 0.10, so collapse-round parameters were never tested.
+    expansion_rates   = [0.05, 0.07, 0.10, 0.12, 0.15, 0.18, 0.20]
+    winter_severities = [0.04, 0.06, 0.08, 0.10, 0.12, 0.15]
+    food_drains       = [0.02, 0.03, 0.04, 0.05, 0.06, 0.08]
 
     combos = list(itertools.product(expansion_rates, winter_severities, food_drains))
     print(f"Grid search: {len(combos)} combinations × {len(datasets)} datasets × {N_MC} MC runs")
@@ -124,17 +127,21 @@ def main():
 
     for idx, (er, ws, fd) in enumerate(combos):
         scores = []
+        per_dataset = []
         for d in datasets:
             pred = mc_predict(d['grid'], d['settlements'], er, ws, fd)
             s = _score(pred, d['gt'])
             scores.append(s)
+            per_dataset.append(f"{d['name']}:{s:.1f}")
         avg = float(np.mean(scores))
         results.append((avg, er, ws, fd))
         if avg > best_score:
             best_score = avg
             best_params = (er, ws, fd)
-        print(f"[{idx+1:3d}/{len(combos)}] er={er:.2f} ws={ws:.2f} fd={fd:.2f}  avg_score={avg:.3f}"
-              + (" *** BEST ***" if (er, ws, fd) == best_params else ""))
+        detail = "  [" + ", ".join(per_dataset) + "]"
+        print(f"[{idx+1:3d}/{len(combos)}] er={er:.2f} ws={ws:.2f} fd={fd:.2f}  avg={avg:.3f}"
+              + (" *** BEST ***" if (er, ws, fd) == best_params else "")
+              + detail)
 
     # Sort and print top 10
     results.sort(reverse=True)
