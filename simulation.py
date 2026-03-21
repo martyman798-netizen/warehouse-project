@@ -57,26 +57,36 @@ def run_simulation(
     W = len(initial_grid[0]) if H > 0 else 0
     grid = [row[:] for row in initial_grid]
 
-    # Settlement internal state
+    # Settlement internal state.
+    # The API returns an empty settlements list, so we always derive settlement
+    # positions directly from the grid (any TERRAIN_SETTLEMENT / TERRAIN_PORT cell).
+    # Entries from initial_settlements supply has_port; grid is the authoritative
+    # source of which cells are settlements.
+    sett_meta: dict[tuple[int, int], dict] = {
+        (s["x"], s["y"]): s for s in initial_settlements
+    }
     setts: dict[tuple[int, int], dict] = {}
-    for s in initial_settlements:
-        sx, sy = s["x"], s["y"]
-        forest_adj = sum(
-            1 for dx, dy in [(-1,0),(1,0),(0,-1),(0,1),(-2,0),(2,0),(0,-2),(0,2)]
-            if 0 <= sx+dx < W and 0 <= sy+dy < H
-            and grid[sy+dy][sx+dx] == config.TERRAIN_FOREST
-        )
-        has_port = s.get("has_port", False)
-        setts[(sx, sy)] = {
-            "pop":          rng.uniform(1.0, 2.5),
-            "food":         min(1.0, 0.3 + forest_adj * 0.07 + rng.uniform(0, 0.2)),
-            "wealth":       rng.uniform(0.3, 0.7),
-            "defense":      rng.uniform(0.3, 0.7),
-            "has_port":     has_port,
-            "has_longship": has_port,   # ports start with maritime access
-            "alive":        True,
-            "owner_id":     rng.randint(0, 2),
-        }
+    for gy in range(H):
+        for gx in range(W):
+            if grid[gy][gx] not in {config.TERRAIN_SETTLEMENT, config.TERRAIN_PORT}:
+                continue
+            meta = sett_meta.get((gx, gy), {})
+            has_port = meta.get("has_port", grid[gy][gx] == config.TERRAIN_PORT)
+            forest_adj = sum(
+                1 for dx, dy in [(-1,0),(1,0),(0,-1),(0,1),(-2,0),(2,0),(0,-2),(0,2)]
+                if 0 <= gx+dx < W and 0 <= gy+dy < H
+                and grid[gy+dy][gx+dx] == config.TERRAIN_FOREST
+            )
+            setts[(gx, gy)] = {
+                "pop":          rng.uniform(1.0, 2.5),
+                "food":         min(1.0, 0.3 + forest_adj * 0.07 + rng.uniform(0, 0.2)),
+                "wealth":       rng.uniform(0.3, 0.7),
+                "defense":      rng.uniform(0.3, 0.7),
+                "has_port":     has_port,
+                "has_longship": has_port,
+                "alive":        True,
+                "owner_id":     rng.randint(0, 2),
+            }
 
     def _forest_adj(gx: int, gy: int) -> int:
         return sum(
@@ -227,7 +237,7 @@ def run_simulation(
                     for (sx, sy), s in setts.items()
                     if abs(sx - x) + abs(sy - y) <= 5
                 )
-                if near_alive and rng.random() < 0.04:
+                if near_alive and rng.random() < 0.15:
                     adj_ocean = any(
                         0 <= x + ddx < W and 0 <= y + ddy < H
                         and grid[y + ddy][x + ddx] == config.TERRAIN_OCEAN
@@ -247,11 +257,16 @@ def run_simulation(
                             "defense": 0.2, "has_port": False, "has_longship": False,
                             "alive": True, "owner_id": 0,
                         }
-                elif not near_alive and rng.random() < 0.03:
-                    grid[y][x] = (
-                        config.TERRAIN_FOREST if rng.random() < 0.5
-                        else config.TERRAIN_PLAINS
-                    )
+                elif not near_alive and rng.random() < 0.35:
+                    # Isolated ruins revert to barren land, forest, or plains.
+                    # GT shows Empty dominates (~55%) with Forest (~40%) and Plains (~5%).
+                    r = rng.random()
+                    if r < 0.55:
+                        grid[y][x] = config.TERRAIN_EMPTY
+                    elif r < 0.95:
+                        grid[y][x] = config.TERRAIN_FOREST
+                    else:
+                        grid[y][x] = config.TERRAIN_PLAINS
 
     result_settlements = [
         {

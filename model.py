@@ -370,10 +370,11 @@ def compute_prediction(
                     expansion_rate=expansion_rate,
                 )
                 if learned is not None:
-                    # 55% MC (round-specific mechanics) + 45% learned (real game data).
-                    # Both now receive the same expansion_rate feature, so they agree
-                    # on round harshness and the blend is coherent.
-                    prior = 0.55 * mc + 0.45 * learned
+                    # 75% MC (round-specific mechanics) + 25% learned (real game data).
+                    # MC now correctly models settlement collapse mechanics (fixed init),
+                    # so it deserves higher weight; learned model provides a regularising
+                    # prior for non-settlement cells and edge cases.
+                    prior = 0.75 * mc + 0.25 * learned
                 else:
                     prior = mc
             else:
