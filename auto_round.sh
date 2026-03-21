@@ -5,9 +5,10 @@
 #   1. chmod +x auto_round.sh
 #   2. Add your token to a .env file:  echo 'ASTAR_TOKEN=your_token' > .env
 #   3. Add to crontab (crontab -e):
-#        0 1 * * * /full/path/to/warehouse-project/auto_round.sh
+#        0 0 * * * /full/path/to/warehouse-project/auto_round.sh
 #        0 3 * * * /full/path/to/warehouse-project/auto_round.sh
-#      (runs at 1am and 3am — double safety in case Mac wakes late)
+#        0 6 * * * /full/path/to/warehouse-project/auto_round.sh
+#      (runs at midnight, 3am, and 6am — window: 12am–9am)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG="$SCRIPT_DIR/auto_round.log"
