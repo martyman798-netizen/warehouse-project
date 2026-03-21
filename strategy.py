@@ -291,6 +291,7 @@ def _compute_cell_entropies(
     map_w: int,
     map_h: int,
     cross_seed_obs: list[dict[str, list[int]]] | None = None,
+    mc_prior: "np.ndarray | None" = None,
 ) -> "np.ndarray":
     """
     Compute Shannon entropy of the posterior distribution for every cell.
@@ -299,6 +300,12 @@ def _compute_cell_entropies(
     cross_seed_obs: observation dicts from OTHER seeds (discounted via cross_weight).
     Including these gives a more accurate entropy estimate — cells already well-understood
     via cross-seed pooling won't be wastefully re-targeted by Phase 2.
+
+    mc_prior: optional H×W×6 MC simulation prior.  When provided, this replaces
+    the rule-based/learned prior for entropy estimation — giving a much more
+    accurate picture of which cells are genuinely uncertain after the full game
+    mechanics run.  Phase 2 viewports are then centred on cells where the game
+    outcome is most variable, not just where the rule-based prior is diffuse.
     """
     import numpy as np
     import model as terrain_model
@@ -312,7 +319,12 @@ def _compute_cell_entropies(
     entropies = np.zeros((map_h, map_w))
     for y in range(map_h):
         for x in range(map_w):
-            prior = terrain_model._compute_rule_prior(initial_grid, x, y, settlement_positions)
+            if mc_prior is not None:
+                prior = mc_prior[y, x].copy()
+                prior = np.clip(prior, 1e-9, None)
+                prior /= prior.sum()
+            else:
+                prior = terrain_model._compute_rule_prior(initial_grid, x, y, settlement_positions)
             obs = observations.get(f"{x},{y}", [])
             cross_obs: list[int] = []
             if cross_seed_obs:
@@ -336,6 +348,7 @@ def plan_phase2_by_entropy(
     map_h: int,
     seed_idx: int,
     cross_seed_obs: list[dict[str, list[int]]] | None = None,
+    mc_prior: "np.ndarray | None" = None,
 ) -> list[ViewportTask]:
     """
     Plan Phase 2 viewports targeting highest-entropy cells.
@@ -347,13 +360,17 @@ def plan_phase2_by_entropy(
     cross_seed_obs: other seeds' observations, used to get an accurate
     entropy estimate so we don't re-target cells already understood via
     cross-seed pooling.
+
+    mc_prior: optional H×W×6 MC simulation prior for more accurate entropy
+    estimation (see _compute_cell_entropies).
     """
     import numpy as np
 
     if phase2_budget <= 0:
         return []
 
-    entropies = _compute_cell_entropies(initial_grid, observations, map_w, map_h, cross_seed_obs)
+    entropies = _compute_cell_entropies(initial_grid, observations, map_w, map_h, cross_seed_obs,
+                                        mc_prior=mc_prior)
     tasks: list[ViewportTask] = []
     covered = np.zeros((map_h, map_w), dtype=bool)
 

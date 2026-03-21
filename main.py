@@ -260,14 +260,35 @@ def cmd_observe(args, client: AstarIslandClient):
         print("No budget left for Phase 2.")
     else:
         # --- Phase 2: entropy-based targeting ---
-        # Compute total entropy per seed (including cross-seed obs) to allocate
-        # budget proportionally — seeds with more residual uncertainty get more queries.
+        # Compute a quick MC prior (20 runs) to estimate per-cell entropy much
+        # more accurately than the rule-based prior alone.  20 runs is fast (~1s)
+        # and captures the real game mechanic distribution — e.g. which cells
+        # are genuinely 50/50 settlement vs ruin.
+        from simulation import compute_ground_truth, infer_params_from_stats
         print(f"\nPhase 2: {phase2_budget} entropy-targeted queries across {num_seeds} seeds")
+        print("  Computing quick MC priors (20 runs/seed) for entropy estimation...", end=" ", flush=True)
+        raw_stats = _load_settlement_stats(round_id)
+        quick_mc_priors = []
+        for seed_idx, state in enumerate(initial_states):
+            seed_sett_stats = raw_stats.get(str(seed_idx), {})
+            er, ws, fd = infer_params_from_stats(seed_sett_stats)
+            setts = state.get("settlements", [])
+            mc_p = compute_ground_truth(
+                state["grid"], setts, n_runs=20, base_seed=9000 + seed_idx * 20,
+                expansion_rate=er, winter_severity=ws, food_drain=fd,
+            )
+            quick_mc_priors.append(mc_p)
+        print("done")
 
+        # Compute total entropy per seed using MC-based entropy to allocate budget
+        # proportionally — seeds with more residual uncertainty get more queries.
         seed_total_entropy = []
         for seed_idx, state in enumerate(initial_states):
             seed_obs = observations.get(str(seed_idx), {})
-            H_grid = strategy._compute_cell_entropies(state["grid"], seed_obs, map_w, map_h, None)
+            H_grid = strategy._compute_cell_entropies(
+                state["grid"], seed_obs, map_w, map_h, None,
+                mc_prior=quick_mc_priors[seed_idx],
+            )
             seed_total_entropy.append(float(H_grid.sum()))
 
         total_H = sum(seed_total_entropy) or 1
@@ -277,8 +298,12 @@ def cmd_observe(args, client: AstarIslandClient):
         for i in sorted(range(num_seeds), key=lambda i: seed_total_entropy[i], reverse=True):
             if diff == 0:
                 break
-            raw_allocs[i] += 1 if diff > 0 else -1
-            diff += -1 if diff > 0 else 1
+            if diff > 0:
+                raw_allocs[i] += 1
+                diff -= 1
+            elif raw_allocs[i] > 0:  # Only decrement positive allocations to avoid negatives
+                raw_allocs[i] -= 1
+                diff += 1
 
         phase2_tasks: list = []
         for seed_idx, state in enumerate(initial_states):
@@ -291,6 +316,7 @@ def cmd_observe(args, client: AstarIslandClient):
                 state["grid"], seed_obs, alloc,
                 map_w, map_h, seed_idx,
                 cross_seed_obs=None,  # each seed has its own independent map
+                mc_prior=quick_mc_priors[seed_idx],
             )
             phase2_tasks.extend(tasks)
 
@@ -373,8 +399,8 @@ def cmd_predict(args, client: AstarIslandClient):
 
         # Validate: probabilities must sum to 1.0 per cell
         row_sums = pred_array.sum(axis=2)
-        assert np.allclose(row_sums, 1.0, atol=1e-6), \
-            f"Seed {seed_idx}: prediction does not sum to 1.0 per cell"
+        if not np.allclose(row_sums, 1.0, atol=1e-6):
+            raise ValueError(f"Seed {seed_idx}: prediction does not sum to 1.0 per cell")
 
         predictions[seed_str] = terrain_model.prediction_to_list(pred_array)
 
