@@ -480,20 +480,35 @@ def cmd_train(args, client: AstarIslandClient):
     import learned_model
 
     print("Fetching completed rounds...")
+
+    # Collect all completed rounds — both participated and unparticipated.
+    # Unparticipated rounds still have judge ground truth that reveals how the
+    # game mechanics evolve, giving the model broader coverage of map types,
+    # settlement densities, and parameter regimes it has never seen before.
     my_rounds = client.get_my_rounds()
-    completed = [r for r in my_rounds if r.get("status") == "completed"]
+    my_ids = {r["id"] for r in my_rounds}
+
+    all_rounds = client.get_rounds()
+    extra = [r for r in all_rounds if r["id"] not in my_ids and r.get("status") == "completed"]
+
+    completed = [r for r in my_rounds if r.get("status") == "completed"] + extra
+
+    participated_ids = {r["id"] for r in my_rounds if r.get("status") == "completed"}
+
     if not completed:
         print("No completed rounds available for training. Play more rounds first.")
         return
-    print(f"  Found {len(completed)} completed round(s)")
+    print(f"  Found {len(completed)} completed round(s) "
+          f"({len(participated_ids)} participated, {len(extra)} unparticipated)")
 
     samples: list[tuple[int, np.ndarray, np.ndarray]] = []
 
     for round_info in completed:
-        round_id  = round_info["id"]
-        round_num = round_info.get("round_number", "?")
+        round_id    = round_info["id"]
+        round_num   = round_info.get("round_number", "?")
         seeds_count = round_info.get("seeds_count", 5)
-        print(f"\nRound {round_num}  ({round_id}):")
+        tag = "participated" if round_id in participated_ids else "unparticipated"
+        print(f"\nRound {round_num}  ({round_id})  [{tag}]:")
 
         for seed_idx in range(seeds_count):
             try:
