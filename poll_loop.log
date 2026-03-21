@@ -275,3 +275,73 @@ Round 10  (75e625c3-60cb-4392-af3e-c86a98bde8c2)  [participated]:
 Round 9  (2a341ace-0f57-4309-9b89-e59fe0f09179)  [participated]:
   Seed 0: score=46.3707  1327 training cells  er=0.020
   Seed 1: score=21.3695  1357 training cells  er=0.020
+  Seed 2: score=24.1893  1396 training cells  er=0.020
+  Seed 3: score=26.1967  1356 training cells  er=0.020
+  Seed 4: score=21.3  1352 training cells  er=0.020
+
+Round 8  (c5cdf100-a876-4fb7-b5d8-757162c97989)  [participated]:
+  Seed 0: score=48.1629  1350 training cells  er=0.020
+  Seed 1: score=52.7621  1354 training cells  er=0.020
+  Seed 2: score=46.2535  1365 training cells  er=0.020
+  Seed 3: score=49.9218  1343 training cells  er=0.020
+  Seed 4: score=50.2729  1384 training cells  er=0.020
+
+Round 7  (36e581f1-73f8-453f-ab98-cbe3052b701b)  [participated]:
+  Seed 0: score=37.3362  1353 training cells  er=0.090
+  Seed 1: score=39.279  1382 training cells  er=0.090
+  Seed 2: score=37.0136  1361 training cells  er=0.090
+  Seed 3: score=38.6243  1381 training cells  er=0.090
+  Seed 4: score=36.5054  1351 training cells  er=0.090
+
+Round 6  (ae78003a-4efe-425a-881a-d16a39bca0ad)  [participated]:
+  Seed 0: score=50.0622  1394 training cells  er=0.084
+  Seed 1: score=48.698  1358 training cells  er=0.084
+  Seed 2: score=46.9908  1319 training cells  er=0.084
+  Seed 3: score=48.7461  1385 training cells  er=0.084
+  Seed 4: score=50.3341  1378 training cells  er=0.084
+
+Round 5  (fd3c92ff-3178-4dc9-8d9b-acf389b3982b)  [participated]:
+  Seed 0: score=None  1386 training cells  er=0.055
+  Seed 1: score=None  1387 training cells  er=0.055
+  Seed 2: score=None  1358 training cells  er=0.055
+  Seed 3: score=None  1322 training cells  er=0.055
+  Seed 4: score=None  1357 training cells  er=0.055
+
+Round 4  (8e839974-b13b-407b-a5e7-fc749d877195)  [participated]:
+  Seed 0: score=None  1359 training cells  er=0.020
+  Seed 1: score=None  1373 training cells  er=0.020
+  Seed 2: score=None  1317 training cells  er=0.020
+  Seed 3: score=None  1325 training cells  er=0.020
+  Seed 4: score=None  1384 training cells  er=0.020
+
+Round 3  (f1dac9a9-5cf1-49a9-8f17-d6cb5d5ba5cb)  [participated]:
+  Seed 0: score=None  1326 training cells  er=0.020
+  Seed 1: score=None  1362 training cells  er=0.020
+  Seed 2: score=None  1352 training cells  er=0.020
+  Seed 3: score=None  1339 training cells  er=0.020
+  Seed 4: score=None  1382 training cells  er=0.020
+
+Round 2  (76909e29-f664-4b2f-b16b-61b7507277e9)  [participated]:
+  Seed 0: score=None  1388 training cells  er=0.108
+  Seed 1: score=None  1354 training cells  er=0.108
+  Seed 2: score=None  1332 training cells  er=0.108
+  Seed 3: score=None  1339 training cells  er=0.108
+  Seed 4: score=None  1372 training cells  er=0.108
+
+Round 1  (71451d74-be9f-471f-aacd-a41f3b68a9cd)  [participated]:
+  Seed 0: score=None  1375 training cells  er=0.087
+  Seed 1: score=None  1335 training cells  er=0.087
+  Seed 2: score=None  1370 training cells  er=0.087
+  Seed 3: score=None  1370 training cells  er=0.087
+  Seed 4: score=None  1363 training cells  er=0.087
+
+Training on 115,721 samples (17 round(s) × up to 5 seeds)...
+  Settlement   n= 3784  CE=1.1740  converged=True
+  Port         n=  146  CE=1.3015  converged=True
+  Forest       n=29017  CE=0.7955  converged=True
+  Plains       n=82774  CE=0.6847  converged=True
+Saved model weights → model_weights.json
+
+Done. Model weights will be used automatically for future predictions.
+[2026-03-21 23:49:08] Committing and pushing changes...
+[2026-03-21 23:49:08] Committing and pushing changes...
