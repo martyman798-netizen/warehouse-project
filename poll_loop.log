@@ -171,3 +171,21 @@ To http://127.0.0.1:39325/git/martyman798-netizen/warehouse-project
 branch 'claude/viking-prediction-model-WXUyO' set up to track 'origin/claude/viking-prediction-model-WXUyO'.
 [2026-03-21 22:55:36] Round b0f9d1bf-4b71-4e6e-816c-19c718d29056 complete.
 [2026-03-21 22:55:36] Sleeping 4500s until next check...
+[2026-03-21 23:43:48] === Poll loop started (interval=4500s / 75 min) ===
+[2026-03-21 23:43:48] === Poll loop started (interval=4500s / 75 min) ===
+[2026-03-21 23:43:48] --- Checking for active round ---
+[2026-03-21 23:43:48] --- Checking for active round ---
+[2026-03-21 23:43:52] Status: Round: b0f9d1bf-4b71-4e6e-816c-19c718d29056
+Budget: 50/50 queries used
+Active: True
+[2026-03-21 23:43:52] Status: Round: b0f9d1bf-4b71-4e6e-816c-19c718d29056
+Budget: 50/50 queries used
+Active: True
+[2026-03-21 23:43:52] New active round: b0f9d1bf-4b71-4e6e-816c-19c718d29056 (queries used: 50)
+[2026-03-21 23:43:52] New active round: b0f9d1bf-4b71-4e6e-816c-19c718d29056 (queries used: 50)
+[2026-03-21 23:43:52] Queries already spent — running predict only...
+[2026-03-21 23:43:52] Queries already spent — running predict only...
+Fetching round b0f9d1bf-4b71-4e6e-816c-19c718d29056...
+  Map: 40×40, 5 seeds
+  Pooled round params: er=0.117 ws=0.043 fd=0.022
+  Seed 0: running MC simulation (100 runs)... 
