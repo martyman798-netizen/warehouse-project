@@ -361,10 +361,12 @@ def cmd_predict(args, client: AstarIslandClient):
     from simulation import infer_params_from_obs
     n_mc = getattr(args, "mc_runs", 100)
     local_mc_priors = []
+    seed_expansion_rates = []
     for seed_idx, state in enumerate(initial_states):
         seed_str = str(seed_idx)
         seed_obs = observations.get(seed_str, {})
         er, ws, fd = infer_params_from_obs(state["grid"], seed_obs)
+        seed_expansion_rates.append(er)
         n_obs_cells = len(seed_obs)
         print(f"  Seed {seed_idx}: inferred params er={er:.3f} ws={ws:.3f} fd={fd:.3f} "
               f"(from {n_obs_cells} terrain observations)")
@@ -397,6 +399,7 @@ def cmd_predict(args, client: AstarIslandClient):
             settlement_stats=agg_stats,
             local_mc_prior=local_mc_priors[seed_idx],
             n_mc_runs=n_mc,
+            expansion_rate=seed_expansion_rates[seed_idx],
         )
 
         # Validate: probabilities must sum to 1.0 per cell
@@ -512,6 +515,31 @@ def cmd_train(args, client: AstarIslandClient):
         tag = "participated" if round_id in participated_ids else "unparticipated"
         print(f"\nRound {round_num}  ({round_id})  [{tag}]:")
 
+        # Estimate round expansion_rate from seed 0 GT (same hidden params for all seeds).
+        # The GT reveals whether it was a growth or collapse round: count what fraction
+        # of initial settlement cells have argmax Settlement/Port in the GT.
+        round_er = 0.07  # fallback: moderate
+        try:
+            s0 = client.get_analysis(round_id, 0)
+            ig0 = s0.get("initial_grid") or []
+            gt0 = s0.get("ground_truth") or []
+            if ig0 and gt0:
+                gt0_arr = np.array(gt0, dtype=np.float64)
+                init_setts_0 = [
+                    (x, y) for y, row in enumerate(ig0) for x, v in enumerate(row)
+                    if v in {config.TERRAIN_SETTLEMENT, config.TERRAIN_PORT}
+                ]
+                if init_setts_0:
+                    survived = sum(
+                        1 for x, y in init_setts_0
+                        if gt0_arr[y, x].argmax() in {config.CLASS_SETTLEMENT, config.CLASS_PORT}
+                    )
+                    gt_survival = survived / len(init_setts_0)
+                    # Map: 100% survival → mild (er=0.12), 0% survival → harsh (er=0.02)
+                    round_er = 0.02 + gt_survival * 0.10
+        except Exception:
+            pass  # fallback already set
+
         for seed_idx in range(seeds_count):
             try:
                 analysis = client.get_analysis(round_id, seed_idx)
@@ -544,12 +572,15 @@ def cmd_train(args, client: AstarIslandClient):
                     terrain = initial_grid[y][x]
                     if terrain not in learned_model.LEARNABLE_TERRAINS:
                         continue
-                    feat = learned_model.extract_features(initial_grid, x, y, settlement_positions)
+                    feat = learned_model.extract_features(
+                        initial_grid, x, y, settlement_positions,
+                        expansion_rate=round_er,
+                    )
                     gt_prob = gt_array[y, x]
                     samples.append((terrain, feat, gt_prob))
                     n += 1
 
-            print(f"  Seed {seed_idx}: score={score}  {n} training cells collected")
+            print(f"  Seed {seed_idx}: score={score}  {n} training cells  er={round_er:.3f}")
 
     if not samples:
         print("\nNo training samples collected.")

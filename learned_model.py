@@ -22,9 +22,9 @@ import config
 # Feature extraction
 # ---------------------------------------------------------------------------
 
-N_FEATURES = 13  # d_settle_log, forest_adj_r2, coastal, n_sett_r5, n_ports_r3,
+N_FEATURES = 14  # d_settle_log, forest_adj_r2, coastal, n_sett_r5, n_ports_r3,
                  # n_ruins_r3, d_ocean_log, forest_r1, n_sett_r3, d2_settle_log,
-                 # n_ruins_r5, n_forests_r3, bias
+                 # n_ruins_r5, n_forests_r3, expansion_rate (round harshness), bias
 N_CLASSES = config.NUM_CLASSES
 
 # Terrain types that need a learned model (static types use fixed priors)
@@ -43,8 +43,15 @@ def extract_features(
     x: int,
     y: int,
     settlement_positions: list[tuple[int, int]],
+    expansion_rate: float = 0.07,
 ) -> np.ndarray:
-    """Return N_FEATURES-dim feature vector for cell (x, y) in initial grid."""
+    """Return N_FEATURES-dim feature vector for cell (x, y) in initial grid.
+
+    expansion_rate encodes the round's harshness (inferred from observed terrain
+    collapse or from the analysis GT during training).  It ranges [0.02, 0.12]:
+    low = harsh collapse round, high = mild growth round.  This is the single
+    most important piece of information missing from previous features.
+    """
     H = len(grid)
     W = len(grid[0]) if H > 0 else 0
 
@@ -147,6 +154,9 @@ def extract_features(
     )
     n_forests_r3_norm = min(n_forests_r3, 20) / 20.0
 
+    # Normalise expansion_rate to [0, 1]: 0.02 (max harsh) → 0.0, 0.12 (max mild) → 1.0
+    er_norm = max(0.0, min(1.0, (expansion_rate - 0.02) / 0.10))
+
     return np.array([
         d_settle_log,
         forest_adj_norm,
@@ -160,6 +170,7 @@ def extract_features(
         d2_settle_log,        # isolation from nearest rival
         n_ruins_r5_norm,      # wider area collapse signal
         n_forests_r3_norm,    # food buffer
+        er_norm,              # round harshness (0=collapse round, 1=growth round)
         1.0,                  # bias
     ], dtype=np.float64)
 
@@ -292,6 +303,7 @@ def compute_prior(
     x: int,
     y: int,
     settlement_positions: list[tuple[int, int]],
+    expansion_rate: float = 0.07,
 ) -> np.ndarray | None:
     """
     Return learned prior for cell (x, y), or None if no weights are loaded
@@ -303,7 +315,7 @@ def compute_prior(
     W = _weights.get(terrain)
     if W is None:
         return None
-    feat = extract_features(grid, x, y, settlement_positions)
+    feat = extract_features(grid, x, y, settlement_positions, expansion_rate=expansion_rate)
     logits = W @ feat          # (C,)
     return _softmax(logits)
 
