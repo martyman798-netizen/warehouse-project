@@ -24,7 +24,8 @@ def run_simulation(
     initial_settlements: list[dict],
     rng: random.Random,
     expansion_rate: float = 0.08,
-    winter_severity: float = 0.08,
+    winter_severity: float = 0.05,
+    food_drain: float = 0.02,
 ) -> tuple[list[list[int]], list[dict]]:
     """
     Stochastic 50-year simulation following the documented game lifecycle:
@@ -45,8 +46,9 @@ def run_simulation(
         initial_grid:        H×W terrain grid (list of lists of terrain ints)
         initial_settlements: list of dicts with at least {x, y, has_port}
         rng:                 seeded Random instance for reproducibility
-        expansion_rate:      base probability a thriving settlement expands per year
-        winter_severity:     mean food drain per winter (Gaussian σ=0.08); calibrated to ~0.15
+        expansion_rate:      base probability a thriving settlement expands per year (calibrated=0.08)
+        winter_severity:     mean food drain per winter (Gaussian σ=0.08); calibrated=0.05
+        food_drain:          annual food drain from growth/maintenance; calibrated=0.02
 
     Returns:
         (final_grid, final_settlements) after 50 years
@@ -94,7 +96,7 @@ def run_simulation(
 
             fa = _forest_adj(sx, sy)
             food_income = 0.08 + fa * 0.04
-            s["food"] = min(1.0, s["food"] + food_income - 0.05)
+            s["food"] = min(1.0, s["food"] + food_income - food_drain)
             if s["food"] > 0.4:
                 s["pop"] = min(8.0, s["pop"] + 0.15)
 
