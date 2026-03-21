@@ -298,6 +298,7 @@ def compute_prediction(
     settlement_stats: dict[str, dict[str, float]] | None = None,
     local_mc_prior: np.ndarray | None = None,
     n_mc_runs: int = 0,
+    expansion_rate: float = 0.07,
 ) -> np.ndarray:
     """
     Build H×W×6 prediction tensor for one seed.
@@ -364,9 +365,14 @@ def compute_prediction(
                 mc /= mc.sum()
 
                 import learned_model as _lm
-                learned = _lm.compute_prior(initial_grid, x, y, settlement_positions)
+                learned = _lm.compute_prior(
+                    initial_grid, x, y, settlement_positions,
+                    expansion_rate=expansion_rate,
+                )
                 if learned is not None:
-                    # 55% MC (round-specific mechanics) + 45% learned (real game data)
+                    # 55% MC (round-specific mechanics) + 45% learned (real game data).
+                    # Both now receive the same expansion_rate feature, so they agree
+                    # on round harshness and the blend is coherent.
                     prior = 0.55 * mc + 0.45 * learned
                 else:
                     prior = mc
