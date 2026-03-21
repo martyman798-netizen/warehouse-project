@@ -45,8 +45,11 @@ while true; do
         log "Running autolearn (train)..."
         cd "$SCRIPT_DIR" && python3 main.py train >> "$LOG" 2>&1
 
+        log "Running self-review (code quality check)..."
+        cd "$SCRIPT_DIR" && claude --print "Review all .py files in this project for bugs, logic flaws, edge cases, and code quality issues. Fix any problems found directly in the files. Be concise in the log." >> "$LOG" 2>&1
+
         log "Committing and pushing changes..."
-        cd "$SCRIPT_DIR" && git add -A && git commit -m "Auto: R$(date '+%Y%m%d-%H%M') observe+predict+submit+train
+        cd "$SCRIPT_DIR" && git add -A && git commit -m "Auto: R$(date '+%Y%m%d-%H%M') observe+predict+submit+train+review
 
 https://claude.ai/code/session_01Xgcfa2HAmz6Bq2qsVTkNDA" >> "$LOG" 2>&1
         cd "$SCRIPT_DIR" && git push -u origin claude/viking-prediction-model-WXUyO >> "$LOG" 2>&1
