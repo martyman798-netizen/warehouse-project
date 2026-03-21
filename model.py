@@ -258,13 +258,17 @@ def _update_with_observations(
     # Effective observation count for alpha_strength calculation
     n_eff = n_obs + n_cross * cross_weight
 
-    # Prior strength: weaken prior relative to observations
+    # Prior strength: weaken prior relative to observations.
+    # Each API observation is a real game sample — it should carry substantial
+    # weight even when we only have 1 per cell (which is the common case after
+    # Phase 1 full-coverage tiling).  A lower alpha_strength lets real data
+    # override a potentially mis-calibrated MC/learned prior more easily.
     if n_eff >= 5:
+        alpha_strength = 0.3
+    elif n_eff >= 2:
         alpha_strength = 0.5
-    elif n_eff >= 3:
-        alpha_strength = 1.0
     else:
-        alpha_strength = 1.0  # was 2.0 — prior was drowning out single observations
+        alpha_strength = 0.7  # single observation: prior still matters but not dominant
 
     alpha = prior * alpha_strength
     posterior = alpha + counts
@@ -328,12 +332,29 @@ def compute_prediction(
                     cross_obs.extend(other_obs.get(key, []))
 
             if local_mc_prior is not None:
-                # Local MC simulation provides a full-mechanics prior — use it
-                # directly.  It captures expansion, conflict, food dynamics, etc.
-                # far better than any learned or rule-based approximation.
-                prior = local_mc_prior[y, x].copy()
-                prior = np.clip(prior, 1e-6, None)
-                prior /= prior.sum()
+                # Blend local MC prior with the learned model (if weights exist).
+                #
+                # The MC prior captures game mechanics from our local simulation
+                # but may be systematically wrong when hidden round parameters
+                # differ from what we calibrated on.
+                #
+                # The learned model was trained directly on the server's ground
+                # truth across all completed rounds — it captures what the game
+                # *actually* produces on average.
+                #
+                # Blending both gives us the round-specific signal from MC while
+                # the learned model corrects for systematic simulation errors.
+                mc = local_mc_prior[y, x].copy()
+                mc = np.clip(mc, 1e-6, None)
+                mc /= mc.sum()
+
+                import learned_model as _lm
+                learned = _lm.compute_prior(initial_grid, x, y, settlement_positions)
+                if learned is not None:
+                    # 55% MC (round-specific mechanics) + 45% learned (real game data)
+                    prior = 0.55 * mc + 0.45 * learned
+                else:
+                    prior = mc
             else:
                 prior = _compute_rule_prior(initial_grid, x, y, settlement_positions)
 
