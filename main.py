@@ -259,70 +259,32 @@ def cmd_observe(args, client: AstarIslandClient):
     if phase2_budget <= 0:
         print("No budget left for Phase 2.")
     else:
-        # --- Phase 2: entropy-based targeting ---
-        # Compute a quick MC prior (20 runs) to estimate per-cell entropy much
-        # more accurately than the rule-based prior alone.  20 runs is fast (~1s)
-        # and captures the real game mechanic distribution — e.g. which cells
-        # are genuinely 50/50 settlement vs ruin.
-        from simulation import compute_ground_truth, infer_params_from_stats, infer_params_from_obs
-        print(f"\nPhase 2: {phase2_budget} entropy-targeted queries across {num_seeds} seeds")
-        print("  Computing quick MC priors (20 runs/seed) for entropy estimation...", end=" ", flush=True)
-        raw_stats = _load_settlement_stats(round_id)
-        quick_mc_priors = []
-        for seed_idx, state in enumerate(initial_states):
-            seed_str_p2 = str(seed_idx)
-            seed_obs_p2 = observations.get(seed_str_p2, {})
-            er, ws, fd = infer_params_from_obs(state["grid"], seed_obs_p2)
-            setts = state.get("settlements", [])
-            mc_p = compute_ground_truth(
-                state["grid"], setts, n_runs=20, base_seed=9000 + seed_idx * 20,
-                expansion_rate=er, winter_severity=ws, food_drain=fd,
-            )
-            quick_mc_priors.append(mc_p)
-        print("done")
+        # --- Phase 2: settlement-cluster re-observation ---
+        # With n_mc_runs=300 in predict, each single API observation contributes
+        # only ~1/300 weight to the posterior — entropy-targeted queries barely
+        # move per-cell predictions.  Instead we target initial settlement cells:
+        # each re-observation is an independent collapse/survive data point that
+        # feeds infer_params_pooled and sharpens the harshness estimate used by
+        # the 300-run MC prior (much higher leverage than generic entropy queries).
+        print(f"\nPhase 2: {phase2_budget} settlement-cluster queries across {num_seeds} seeds")
 
-        # Compute total entropy per seed using MC-based entropy to allocate budget
-        # proportionally — seeds with more residual uncertainty get more queries.
-        seed_total_entropy = []
-        for seed_idx, state in enumerate(initial_states):
-            seed_obs = observations.get(str(seed_idx), {})
-            H_grid = strategy._compute_cell_entropies(
-                state["grid"], seed_obs, map_w, map_h, None,
-                mc_prior=quick_mc_priors[seed_idx],
-            )
-            seed_total_entropy.append(float(H_grid.sum()))
-
-        total_H = sum(seed_total_entropy) or 1
-        raw_allocs = [max(0, round(phase2_budget * h / total_H)) for h in seed_total_entropy]
-        # Fix rounding so allocs sum exactly to phase2_budget
-        diff = phase2_budget - sum(raw_allocs)
-        for i in sorted(range(num_seeds), key=lambda i: seed_total_entropy[i], reverse=True):
-            if diff == 0:
-                break
-            if diff > 0:
-                raw_allocs[i] += 1
-                diff -= 1
-            elif raw_allocs[i] > 0:  # Only decrement positive allocations to avoid negatives
-                raw_allocs[i] -= 1
-                diff += 1
+        # Distribute budget evenly across seeds (1 per seed for 5 seeds/5 budget)
+        base_alloc = phase2_budget // num_seeds
+        remainder = phase2_budget - base_alloc * num_seeds
+        raw_allocs = [base_alloc + (1 if i < remainder else 0) for i in range(num_seeds)]
 
         phase2_tasks: list = []
         for seed_idx, state in enumerate(initial_states):
-            seed_str = str(seed_idx)
-            seed_obs = observations.get(seed_str, {})
             alloc = raw_allocs[seed_idx]
             if alloc <= 0:
                 continue
-            tasks = strategy.plan_phase2_by_entropy(
-                state["grid"], seed_obs, alloc,
-                map_w, map_h, seed_idx,
-                cross_seed_obs=None,  # each seed has its own independent map
-                mc_prior=quick_mc_priors[seed_idx],
+            tasks = strategy.plan_phase2_settlement_focused(
+                state["grid"], seed_idx, alloc, map_w, map_h,
             )
             phase2_tasks.extend(tasks)
 
         alloc_str = " ".join(f"s{i}:{a}" for i, a in enumerate(raw_allocs))
-        print(f"  Entropy-proportional alloc: {alloc_str}")
+        print(f"  Settlement-cluster alloc: {alloc_str}")
 
         print(strategy.describe_plan(phase2_tasks))
         _execute_tasks(phase2_tasks, "P2")
@@ -358,18 +320,24 @@ def cmd_predict(args, client: AstarIslandClient):
     # so we must run compute_ground_truth separately for each seed.
     # Infer round-specific parameters from observed settlement food/survival data
     # so we adapt to growth rounds (mild params) vs collapse rounds (harsh params).
-    from simulation import infer_params_from_obs
-    n_mc = getattr(args, "mc_runs", 100)
+    from simulation import infer_params_pooled
+    n_mc = getattr(args, "mc_runs", 300)
+
+    # Pool collapse evidence from all 5 seeds — they share the same hidden round
+    # parameters (expansion_rate, winter_severity, food_drain).  ~5× more settlement
+    # observations gives a much more accurate round-level harshness estimate.
+    er, ws, fd = infer_params_pooled(initial_states, observations)
+    total_sett_obs = sum(
+        1 for s in initial_states for y, row in enumerate(s["grid"])
+        for x, v in enumerate(row) if v in {config.TERRAIN_SETTLEMENT, config.TERRAIN_PORT}
+        if f"{x},{y}" in observations.get(str(initial_states.index(s)), {})
+    )
+    print(f"  Pooled round params: er={er:.3f} ws={ws:.3f} fd={fd:.3f}")
+
     local_mc_priors = []
     seed_expansion_rates = []
     for seed_idx, state in enumerate(initial_states):
-        seed_str = str(seed_idx)
-        seed_obs = observations.get(seed_str, {})
-        er, ws, fd = infer_params_from_obs(state["grid"], seed_obs)
         seed_expansion_rates.append(er)
-        n_obs_cells = len(seed_obs)
-        print(f"  Seed {seed_idx}: inferred params er={er:.3f} ws={ws:.3f} fd={fd:.3f} "
-              f"(from {n_obs_cells} terrain observations)")
         print(f"  Seed {seed_idx}: running MC simulation ({n_mc} runs)...", end=" ", flush=True)
         setts = state.get("settlements", [])
         prior = compute_ground_truth(

@@ -340,9 +340,10 @@ def infer_params_from_obs(
     uncorrupted by the missing-dead-settlement bias.
 
     Because we observe only one run per cell (Phase 1 full-coverage), the
-    single-run collapse rate underestimates the true expected collapse rate.
-    Empirically across completed rounds the true collapse rate is ~1.5× the
-    single-run rate, so we apply that scaling before mapping to harshness.
+    single-run collapse rate is a direct sample from the GT distribution.
+    Mild rounds have an intrinsic stochastic collapse rate of ~0.40 even at
+    harshness=0 (high variability in single runs); harsh rounds push this to
+    0.90+.  We use 0.40 as the baseline floor and 0.50 as the range width.
 
     Args:
         initial_grid: H×W terrain grid (initial state)
@@ -376,14 +377,10 @@ def infer_params_from_obs(
 
     observed_collapse_rate = n_collapsed / total_obs
 
-    # Scale observed single-run collapse rate to approximate the true expected
-    # collapse rate (single-run observations underestimate the true average by
-    # roughly 1.5× based on comparison with analysis ground truth).
-    true_collapse_est = min(1.0, observed_collapse_rate * 1.5)
-
     # harshness ∈ [0, 1]: 0 = very mild (growth), 1 = catastrophic collapse
-    # 5% collapse → harshness=0, 70%+ collapse → harshness=1
-    harshness = max(0.0, min(1.0, (true_collapse_est - 0.05) / 0.65))
+    # Baseline: mild rounds have ~0.40 intrinsic collapse rate (stochasticity).
+    # Full range: 0.40 (harshness=0, er=0.12) → 0.90+ (harshness=1, er=0.02)
+    harshness = max(0.0, min(1.0, (observed_collapse_rate - 0.40) / 0.50))
 
     # Wider parameter range than infer_params_from_stats to reach true extremes:
     #   Mild (harshness=0):  er=0.12, ws=0.04, fd=0.02
@@ -391,6 +388,63 @@ def infer_params_from_obs(
     expansion_rate  = 0.12 - harshness * 0.10   # [0.02, 0.12]
     winter_severity = 0.04 + harshness * 0.11   # [0.04, 0.15]
     food_drain      = 0.02 + harshness * 0.06   # [0.02, 0.08]
+
+    return round(expansion_rate, 4), round(winter_severity, 4), round(food_drain, 4)
+
+
+def infer_params_pooled(
+    initial_states: list[dict],
+    all_observations: dict[str, dict[str, list[int]]],
+) -> tuple[float, float, float]:
+    """
+    Infer round-level simulation parameters by pooling collapse evidence from
+    ALL seeds.
+
+    All seeds in a round share the same hidden expansion_rate, winter_severity,
+    food_drain.  Pooling all seeds' settlement-collapse signals gives ~√5 lower
+    estimation noise compared to per-seed inference.
+
+    Args:
+        initial_states: list of {grid, settlements} for each seed
+        all_observations: dict seed_str → {key → [class_int]}
+
+    Returns:
+        (expansion_rate, winter_severity, food_drain) — single estimate for round
+    """
+    from collections import Counter
+
+    total_collapsed = 0
+    total_survived = 0
+
+    for seed_idx, state in enumerate(initial_states):
+        grid = state["grid"]
+        seed_obs = all_observations.get(str(seed_idx), {})
+        for y, row in enumerate(grid):
+            for x, val in enumerate(row):
+                if val not in {config.TERRAIN_SETTLEMENT, config.TERRAIN_PORT}:
+                    continue
+                key = f"{x},{y}"
+                obs = seed_obs.get(key, [])
+                if not obs:
+                    continue
+                most_common = Counter(obs).most_common(1)[0][0]
+                if most_common in {config.CLASS_SETTLEMENT, config.CLASS_PORT}:
+                    total_survived += 1
+                else:
+                    total_collapsed += 1
+
+    total_obs = total_collapsed + total_survived
+    if total_obs < 5:
+        return 0.10, 0.06, 0.03
+
+    observed_collapse_rate = total_collapsed / total_obs
+    # Baseline: mild rounds have ~0.40 intrinsic collapse rate (stochasticity).
+    # Full range: 0.40 (harshness=0, er=0.12) → 0.90+ (harshness=1, er=0.02)
+    harshness = max(0.0, min(1.0, (observed_collapse_rate - 0.40) / 0.50))
+
+    expansion_rate  = 0.12 - harshness * 0.10
+    winter_severity = 0.04 + harshness * 0.11
+    food_drain      = 0.02 + harshness * 0.06
 
     return round(expansion_rate, 4), round(winter_severity, 4), round(food_drain, 4)
 
