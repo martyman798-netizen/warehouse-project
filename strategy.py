@@ -390,6 +390,47 @@ def plan_phase2_by_entropy(
     return tasks
 
 
+def plan_phase2_settlement_focused(
+    initial_grid: list[list[int]],
+    seed_idx: int,
+    budget: int,
+    map_w: int,
+    map_h: int,
+) -> list[ViewportTask]:
+    """
+    Plan Phase 2 viewports centered on initial settlement clusters.
+
+    With n_mc_runs=300, each single API observation contributes only 1/300
+    weight to the posterior — entropy-targeted queries barely move per-cell
+    predictions.  What DOES help is accumulating more collapse/survive signals
+    from initial Settlement/Port cells, which feeds infer_params_pooled and
+    sharpens the round-level harshness estimate used by the 300-run MC prior.
+
+    Strategy: build viewports centered on settlement clusters and cycle through
+    them to fill the budget.  Each re-observation of a settlement cell is an
+    independent MC run → more data for harshness estimation.
+    """
+    positions = _find_settlement_positions(initial_grid)
+
+    if not positions:
+        # No settlements — fall back to map center
+        cx, cy = map_w // 2, map_h // 2
+        x, y, w, h = _viewport_centered_on(cx, cy, map_w, map_h)
+        return [ViewportTask(seed_idx, x, y, w, h) for _ in range(budget)]
+
+    clusters = _cluster_settlement_positions(positions)
+    hotspots = []
+    for cx, cy in clusters:
+        x, y, w, h = _viewport_centered_on(cx, cy, map_w, map_h)
+        hotspots.append((x, y, w, h))
+
+    tasks = []
+    for i in range(budget):
+        vp = hotspots[i % len(hotspots)]
+        tasks.append(ViewportTask(seed_idx, *vp))
+    return tasks
+
+
 def describe_plan(tasks: list[ViewportTask]) -> str:
     """Return a human-readable summary of the observation plan."""
     from collections import Counter
