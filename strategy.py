@@ -331,7 +331,10 @@ def _compute_cell_entropies(
                 for od in cross_seed_obs:
                     cross_obs.extend(od.get(f"{x},{y}", []))
             if obs or cross_obs:
-                posterior = terrain_model._update_with_observations(prior, obs, cross_obs or None)
+                posterior = terrain_model._update_with_observations(
+                    prior, obs, cross_obs or None,
+                    initial_terrain=initial_grid[y][x],
+                )
             else:
                 posterior = prior
             posterior = np.clip(posterior, 1e-9, None)
