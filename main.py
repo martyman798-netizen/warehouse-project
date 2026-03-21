@@ -329,12 +329,24 @@ def cmd_predict(args, client: AstarIslandClient):
 
     # Build per-seed MC priors — each seed has its own independent map,
     # so we must run compute_ground_truth separately for each seed.
+    # Infer round-specific parameters from observed settlement food/survival data
+    # so we adapt to growth rounds (mild params) vs collapse rounds (harsh params).
+    from simulation import infer_params_from_stats
     n_mc = getattr(args, "mc_runs", 100)
     local_mc_priors = []
     for seed_idx, state in enumerate(initial_states):
+        seed_str = str(seed_idx)
+        seed_sett_stats = raw_stats.get(seed_str, {})
+        er, ws, fd = infer_params_from_stats(seed_sett_stats)
+        n_obs_setts = len(seed_sett_stats)
+        print(f"  Seed {seed_idx}: inferred params er={er:.3f} ws={ws:.3f} fd={fd:.3f} "
+              f"(from {n_obs_setts} settlement observations)")
         print(f"  Seed {seed_idx}: running MC simulation ({n_mc} runs)...", end=" ", flush=True)
         setts = state.get("settlements", [])
-        prior = compute_ground_truth(state["grid"], setts, n_runs=n_mc, base_seed=seed_idx * n_mc)
+        prior = compute_ground_truth(
+            state["grid"], setts, n_runs=n_mc, base_seed=seed_idx * n_mc,
+            expansion_rate=er, winter_severity=ws, food_drain=fd,
+        )
         local_mc_priors.append(prior)
         print("done")
 
