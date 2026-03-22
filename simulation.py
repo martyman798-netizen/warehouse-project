@@ -281,9 +281,13 @@ def run_simulation(
                             "defense": 0.2, "has_port": False, "has_longship": False,
                             "alive": True, "owner_id": 0,
                         }
-                elif not near_alive and rng.random() < 0.35:
+                elif not near_alive and rng.random() < 0.55:
                     # Isolated ruins revert to barren land, forest, or plains.
-                    # GT shows Empty dominates (~55%) with Forest (~40%) and Plains (~5%).
+                    # Rate raised 0.35 → 0.55: R22 analysis showed our MC over-predicted
+                    # Ruin (7% vs 1.6% GT) because late-collapsing settlements left ruins
+                    # that didn't fully revert in 50 years at the old 35%/year rate.
+                    # With 55%/year: P(still ruin after 10 years) = 0.45^10 ≈ 0.03% ≈ 0.
+                    # GT shows Empty:55%, Forest:40%, Plains:5% for reverted ruins.
                     r = rng.random()
                     if r < 0.55:
                         grid[y][x] = config.TERRAIN_EMPTY
