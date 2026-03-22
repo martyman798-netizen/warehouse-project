@@ -504,3 +504,58 @@ Round 15  (cc5442dd-bc5d-418b-911b-7eb960cb0390)  [participated]:
 
 Round 14  (d0a2c894-2162-4d49-86cf-435b9013f3b8)  [participated]:
   Seed 0: score=33.8895  1388 training cells  er=0.103
+  Seed 1: score=35.9828  1405 training cells  er=0.103
+  Seed 2: score=35.3453  1387 training cells  er=0.103
+  Seed 3: score=34.4888  1376 training cells  er=0.103
+  Seed 4: score=35.7518  1368 training cells  er=0.103
+
+Round 13  (7b4bda99-6165-4221-97cc-27880f5e6d95)  [participated]:
+  Seed 0: score=None  1384 training cells  er=0.020
+  Seed 1: score=None  1350 training cells  er=0.020
+  Seed 2: score=None  1359 training cells  er=0.020
+  Seed 3: score=None  1382 training cells  er=0.020
+  Seed 4: score=None  1363 training cells  er=0.020
+
+Round 12  (795bfb1f-54bd-4f39-a526-9868b36f7ebd)  [participated]:
+  Seed 0: score=None  1362 training cells  er=0.100
+  Seed 1: score=None  1362 training cells  er=0.100
+  Seed 2: score=None  1330 training cells  er=0.100
+  Seed 3: score=None  1356 training cells  er=0.100
+  Seed 4: score=None  1368 training cells  er=0.100
+
+Round 11  (324fde07-1670-4202-b199-7aa92ecb40ee)  [participated]:
+  Seed 0: score=None  1348 training cells  er=0.111
+  Seed 1: score=None  1333 training cells  er=0.111
+  Seed 2: score=None  1351 training cells  er=0.111
+  Seed 3: score=None  1325 training cells  er=0.111
+  Seed 4: score=None  1318 training cells  er=0.111
+
+Round 10  (75e625c3-60cb-4392-af3e-c86a98bde8c2)  [participated]:
+  Seed 0: score=52.1469  1373 training cells  er=0.020
+  Seed 1: score=46.7218  1381 training cells  er=0.020
+  Seed 2: score=35.8093  1345 training cells  er=0.020
+  Seed 3: score=47.0867  1399 training cells  er=0.020
+  Seed 4: score=45.6937  1334 training cells  er=0.020
+
+Round 9  (2a341ace-0f57-4309-9b89-e59fe0f09179)  [participated]:
+  Seed 0: score=46.3707  1327 training cells  er=0.020
+  Seed 1: score=21.3695  1357 training cells  er=0.020
+  Seed 2: score=24.1893  1396 training cells  er=0.020
+  Seed 3: score=26.1967  1356 training cells  er=0.020
+  Seed 4: score=21.3  1352 training cells  er=0.020
+
+Round 8  (c5cdf100-a876-4fb7-b5d8-757162c97989)  [participated]:
+  Seed 0: score=48.1629  1350 training cells  er=0.020
+  Seed 1: score=52.7621  1354 training cells  er=0.020
+  Seed 2: score=46.2535  1365 training cells  er=0.020
+  Seed 3: score=49.9218  1343 training cells  er=0.020
+  Seed 4: score=50.2729  1384 training cells  er=0.020
+
+Round 7  (36e581f1-73f8-453f-ab98-cbe3052b701b)  [participated]:
+  Seed 0: score=37.3362  1353 training cells  er=0.090
+  Seed 1: score=39.279  1382 training cells  er=0.090
+  Seed 2: score=37.0136  1361 training cells  er=0.090
+  Seed 3: score=38.6243  1381 training cells  er=0.090
+  Seed 4: score=36.5054  1351 training cells  er=0.090
+
+Round 6  (ae78003a-4efe-425a-881a-d16a39bca0ad)  [participated]:
