@@ -489,3 +489,18 @@ Round 17  (3eb0c25d-28fa-48ca-b8e1-fc249e3918e9)  [participated]:
   Seed 4: score=67.9628  1346 training cells  er=0.111
 
 Round 16  (8f664aed-8839-4c85-bed0-77a2cac7c6f5)  [participated]:
+  Seed 0: score=52.5766  1353 training cells  er=0.036
+  Seed 1: score=53.0566  1389 training cells  er=0.036
+  Seed 2: score=56.1122  1385 training cells  er=0.036
+  Seed 3: score=54.0671  1358 training cells  er=0.036
+  Seed 4: score=52.9368  1401 training cells  er=0.036
+
+Round 15  (cc5442dd-bc5d-418b-911b-7eb960cb0390)  [participated]:
+  Seed 0: score=41.9721  1395 training cells  er=0.029
+  Seed 1: score=38.9745  1366 training cells  er=0.029
+  Seed 2: score=35.8893  1354 training cells  er=0.029
+  Seed 3: score=40.5081  1380 training cells  er=0.029
+  Seed 4: score=34.2011  1363 training cells  er=0.029
+
+Round 14  (d0a2c894-2162-4d49-86cf-435b9013f3b8)  [participated]:
+  Seed 0: score=33.8895  1388 training cells  er=0.103
