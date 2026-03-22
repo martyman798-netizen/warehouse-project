@@ -299,6 +299,7 @@ def compute_prediction(
     local_mc_prior: np.ndarray | None = None,
     n_mc_runs: int = 0,
     expansion_rate: float = 0.07,
+    pseudo_count: int | None = None,
 ) -> np.ndarray:
     """
     Build H×W×6 prediction tensor for one seed.
@@ -321,6 +322,11 @@ def compute_prediction(
                         replaces the learned/rule-based prior — it captures the
                         full game mechanics and is a much stronger starting point.
                         API observations then refine it via Bayesian update.
+        pseudo_count: number of pseudo-observations to assign to the MC prior in
+                      the Bayesian update.  When None, defaults to n_mc_runs.
+                      Decoupling this from n_mc_runs lets us run more simulation
+                      runs for accuracy while giving real API observations more
+                      relative weight (e.g. n_mc_runs=300, pseudo_count=100).
 
     Returns:
         np.ndarray of shape (H, W, 6) with probabilities summing to 1.0 per cell
@@ -370,18 +376,26 @@ def compute_prediction(
                     expansion_rate=expansion_rate,
                 )
                 if learned is not None:
-                    # 75% MC (round-specific mechanics) + 25% learned (real game data).
-                    # MC now correctly models settlement collapse mechanics (fixed init),
-                    # so it deserves higher weight; learned model provides a regularising
-                    # prior for non-settlement cells and edge cases.
-                    prior = 0.75 * mc + 0.25 * learned
+                    # 60% MC (round-specific mechanics) + 40% learned (real game data).
+                    # The learned model is trained directly on the server's ground truth
+                    # and corrects for systematic simulation errors (wrong mechanics,
+                    # parameter mismatch).  Increasing its weight from 25% → 40% reduces
+                    # the impact of simulation bias, especially on mild/moderate rounds
+                    # where territorial-conflict mortality in our simulator inflates
+                    # predicted collapse rates relative to the real game.
+                    prior = 0.60 * mc + 0.40 * learned
                 else:
                     prior = mc
             else:
                 prior = _compute_rule_prior(initial_grid, x, y, settlement_positions)
 
             if obs or cross_obs:
-                _n_mc = n_mc_runs if local_mc_prior is not None else 0
+                # Use pseudo_count as the Bayesian weight of the MC prior.
+                # This decouples the number of MC simulation runs (which controls
+                # prior accuracy) from the prior's weight in the Bayesian update
+                # (which controls how much real API observations can correct it).
+                # A lower pseudo_count gives observations more corrective power.
+                _n_mc = (pseudo_count if pseudo_count is not None else n_mc_runs) if local_mc_prior is not None else 0
                 posterior = _update_with_observations(
                     prior, obs, cross_obs or None, cross_seed_weight,
                     initial_terrain=initial_grid[y][x],

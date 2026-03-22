@@ -434,6 +434,7 @@ def infer_params_from_obs(
 def infer_params_pooled(
     initial_states: list[dict],
     all_observations: dict[str, dict[str, list[int]]],
+    all_settlement_stats: dict[str, dict] | None = None,
 ) -> tuple[float, float, float]:
     """
     Infer round-level simulation parameters by pooling collapse evidence from
@@ -443,9 +444,20 @@ def infer_params_pooled(
     food_drain.  Pooling all seeds' settlement-collapse signals gives ~√5 lower
     estimation noise compared to per-seed inference.
 
+    Two independent signals are blended:
+    1. Collapse signal: fraction of initial settlement cells that collapsed in the
+       observed runs.  Direct and unbiased, but noisy with few settlements.
+    2. Food signal: average food level of alive settlements.  Low avg food even
+       in survivors → harsh round.  Dead settlements aren't returned by the API,
+       so this is biased toward survivors, but still adds useful information for
+       moderate-harshness rounds where many settlements remain alive.
+
     Args:
         initial_states: list of {grid, settlements} for each seed
         all_observations: dict seed_str → {key → [class_int]}
+        all_settlement_stats: optional dict seed_str → {key → {food/pop/alive: [...]}}
+                              from accumulated simulate responses.  Used to extract
+                              avg_food of alive settlements as a second harshness signal.
 
     Returns:
         (expansion_rate, winter_severity, food_drain) — single estimate for round
@@ -479,7 +491,31 @@ def infer_params_pooled(
     observed_collapse_rate = total_collapsed / total_obs
     # Baseline: mild rounds have ~0.40 intrinsic collapse rate (stochasticity).
     # Full range: 0.40 (harshness=0, er=0.12) → 0.90+ (harshness=1, er=0.02)
-    harshness = max(0.0, min(1.0, (observed_collapse_rate - 0.40) / 0.50))
+    collapse_harshness = max(0.0, min(1.0, (observed_collapse_rate - 0.40) / 0.50))
+
+    # --- Second signal: food level of alive settlements ---
+    # Alive settlements with low avg food → harsh conditions even for survivors.
+    # This helps distinguish moderate from mild rounds when collapse signal is weak.
+    # We pool all alive food observations across all seeds.
+    food_harshness = collapse_harshness  # default: use collapse signal only
+    if all_settlement_stats:
+        alive_foods: list[float] = []
+        for seed_str, seed_stats in all_settlement_stats.items():
+            for key_str, vals in seed_stats.items():
+                alives = vals.get("alive", [])
+                foods  = vals.get("food", [])
+                for a, f in zip(alives, foods):
+                    if a:
+                        alive_foods.append(float(f))
+        if len(alive_foods) >= 5:
+            avg_food = float(np.mean(alive_foods))
+            # Low food (0.0) → harsh (harshness≈1), high food (0.9+) → mild (harshness≈0)
+            food_harshness = max(0.0, min(1.0, 1.0 - avg_food / 0.9))
+
+    # Blend: collapse signal is more reliable when many settlements observed;
+    # food signal helps on moderate rounds where collapse rate is near baseline.
+    # Weight collapse more heavily (it's direct) but add food as correction.
+    harshness = 0.70 * collapse_harshness + 0.30 * food_harshness
 
     expansion_rate  = 0.12 - harshness * 0.10
     winter_severity = 0.04 + harshness * 0.11
