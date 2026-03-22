@@ -374,4 +374,118 @@ Fetching round 597e60cf-d1a1-4627-ac4d-2a61da68b6df...
   Will use up to 50 queries this run
 
 Phase 1: 45 coverage tiles
-  P1 [  1/45] seed=0 viewport=(15,15)  15×15 ... 
+  P1 [  1/45] seed=0 viewport=(15,15)  15×15 ... done  (1/50 queries used)
+  P1 [  2/45] seed=0 viewport=(15,0)  15×15 ... done  (2/50 queries used)
+  P1 [  3/45] seed=0 viewport=(0,15)  15×15 ... done  (3/50 queries used)
+  P1 [  4/45] seed=0 viewport=(0,0)  15×15 ... done  (4/50 queries used)
+  P1 [  5/45] seed=0 viewport=(15,30)  15×10 ... done  (5/50 queries used)
+  P1 [  6/45] seed=0 viewport=(30,15)  10×15 ... done  (6/50 queries used)
+  P1 [  7/45] seed=0 viewport=(0,30)  15×10 ... done  (7/50 queries used)
+  P1 [  8/45] seed=0 viewport=(30,0)  10×15 ... done  (8/50 queries used)
+  P1 [  9/45] seed=0 viewport=(30,30)  10×10 ... done  (9/50 queries used)
+  P1 [ 10/45] seed=1 viewport=(15,15)  15×15 ... done  (10/50 queries used)
+  P1 [ 11/45] seed=1 viewport=(15,0)  15×15 ... done  (11/50 queries used)
+  P1 [ 12/45] seed=1 viewport=(0,15)  15×15 ... done  (12/50 queries used)
+  P1 [ 13/45] seed=1 viewport=(0,0)  15×15 ... done  (13/50 queries used)
+  P1 [ 14/45] seed=1 viewport=(30,15)  10×15 ... done  (14/50 queries used)
+  P1 [ 15/45] seed=1 viewport=(30,0)  10×15 ... done  (15/50 queries used)
+  P1 [ 16/45] seed=1 viewport=(15,30)  15×10 ... done  (16/50 queries used)
+  P1 [ 17/45] seed=1 viewport=(0,30)  15×10 ... done  (17/50 queries used)
+  P1 [ 18/45] seed=1 viewport=(30,30)  10×10 ... done  (18/50 queries used)
+  P1 [ 19/45] seed=2 viewport=(0,15)  15×15 ... done  (19/50 queries used)
+  P1 [ 20/45] seed=2 viewport=(15,0)  15×15 ... done  (20/50 queries used)
+  P1 [ 21/45] seed=2 viewport=(15,15)  15×15 ... done  (21/50 queries used)
+  P1 [ 22/45] seed=2 viewport=(0,0)  15×15 ... done  (22/50 queries used)
+  P1 [ 23/45] seed=2 viewport=(15,30)  15×10 ... done  (23/50 queries used)
+  P1 [ 24/45] seed=2 viewport=(30,15)  10×15 ... done  (24/50 queries used)
+  P1 [ 25/45] seed=2 viewport=(0,30)  15×10 ... done  (25/50 queries used)
+  P1 [ 26/45] seed=2 viewport=(30,0)  10×15 ... done  (26/50 queries used)
+  P1 [ 27/45] seed=2 viewport=(30,30)  10×10 ... done  (27/50 queries used)
+  P1 [ 28/45] seed=3 viewport=(15,0)  15×15 ... done  (28/50 queries used)
+  P1 [ 29/45] seed=3 viewport=(0,15)  15×15 ... done  (29/50 queries used)
+  P1 [ 30/45] seed=3 viewport=(15,15)  15×15 ... done  (30/50 queries used)
+  P1 [ 31/45] seed=3 viewport=(0,0)  15×15 ... done  (31/50 queries used)
+  P1 [ 32/45] seed=3 viewport=(30,15)  10×15 ... done  (32/50 queries used)
+  P1 [ 33/45] seed=3 viewport=(15,30)  15×10 ... done  (33/50 queries used)
+  P1 [ 34/45] seed=3 viewport=(30,0)  10×15 ... done  (34/50 queries used)
+  P1 [ 35/45] seed=3 viewport=(0,30)  15×10 ... done  (35/50 queries used)
+  P1 [ 36/45] seed=3 viewport=(30,30)  10×10 ... done  (36/50 queries used)
+  P1 [ 37/45] seed=4 viewport=(15,15)  15×15 ... done  (37/50 queries used)
+  P1 [ 38/45] seed=4 viewport=(15,0)  15×15 ... done  (38/50 queries used)
+  P1 [ 39/45] seed=4 viewport=(0,15)  15×15 ... done  (39/50 queries used)
+  P1 [ 40/45] seed=4 viewport=(0,0)  15×15 ... done  (40/50 queries used)
+  P1 [ 41/45] seed=4 viewport=(30,0)  10×15 ... done  (41/50 queries used)
+  P1 [ 42/45] seed=4 viewport=(0,30)  15×10 ... done  (42/50 queries used)
+  P1 [ 43/45] seed=4 viewport=(30,15)  10×15 ... done  (43/50 queries used)
+  P1 [ 44/45] seed=4 viewport=(15,30)  15×10 ... done  (44/50 queries used)
+  P1 [ 45/45] seed=4 viewport=(30,30)  10×10 ... done  (45/50 queries used)
+  Saved observations → observations.json
+
+Phase 2: 5 settlement-cluster queries across 5 seeds
+  Settlement-cluster alloc: s0:1 s1:1 s2:1 s3:1 s4:1
+Total observations planned: 5
+  Seed 0: 1 queries
+  Seed 1: 1 queries
+  Seed 2: 1 queries
+  Seed 3: 1 queries
+  Seed 4: 1 queries
+  P2 [  1/5] seed=0 viewport=(21,2)  15×15 ... done  (46/50 queries used)
+  P2 [  2/5] seed=1 viewport=(17,2)  15×15 ... done  (47/50 queries used)
+  P2 [  3/5] seed=2 viewport=(3,1)  15×15 ... done  (48/50 queries used)
+  P2 [  4/5] seed=3 viewport=(4,2)  15×15 ... done  (49/50 queries used)
+  P2 [  5/5] seed=4 viewport=(9,1)  15×15 ... done  (50/50 queries used)
+  Saved observations → observations.json
+  Seed 0: 1600 unique cells observed, 1825 total observations
+  Seed 1: 1600 unique cells observed, 1825 total observations
+  Seed 2: 1600 unique cells observed, 1825 total observations
+  Seed 3: 1600 unique cells observed, 1825 total observations
+  Seed 4: 1600 unique cells observed, 1825 total observations
+Fetching round 597e60cf-d1a1-4627-ac4d-2a61da68b6df...
+  Map: 40×40, 5 seeds
+  Pooled round params: er=0.020 ws=0.150 fd=0.080
+  Seed 0: running MC simulation (100 runs)... done
+  Seed 1: running MC simulation (100 runs)... done
+  Seed 2: running MC simulation (100 runs)... done
+  Seed 3: running MC simulation (100 runs)... done
+  Seed 4: running MC simulation (100 runs)... done
+  Seed 0: computing prediction (1825 obs, 13 settlement-stat cells)... done
+    Most likely classes: Empty:1204, Settlement:8, Ruin:3, Forest:356, Mountain:29
+  Seed 1: computing prediction (1825 obs, 27 settlement-stat cells)... done
+    Most likely classes: Empty:1216, Settlement:10, Ruin:3, Forest:348, Mountain:23
+  Seed 2: computing prediction (1825 obs, 20 settlement-stat cells)... done
+    Most likely classes: Empty:1177, Settlement:12, Ruin:6, Forest:362, Mountain:43
+  Seed 3: computing prediction (1825 obs, 26 settlement-stat cells)... done
+    Most likely classes: Empty:1214, Settlement:3, Ruin:2, Forest:345, Mountain:36
+  Seed 4: computing prediction (1825 obs, 10 settlement-stat cells)... done
+    Most likely classes: Empty:1232, Settlement:2, Ruin:1, Forest:329, Mountain:36
+  Saved predictions → predictions.json
+
+Done. Review predictions.json, then submit with:
+  python main.py submit --round-id 597e60cf-d1a1-4627-ac4d-2a61da68b6df
+[2026-03-22 00:17:16] Submitting all seeds...
+[2026-03-22 00:17:16] Submitting all seeds...
+  Seed 0: submitting... status=accepted
+  Seed 1: submitting... status=accepted
+  Seed 2: submitting... status=accepted
+  Seed 3: submitting... status=accepted
+  Seed 4: submitting... status=accepted
+[2026-03-22 00:17:24] Running autolearn (train)...
+[2026-03-22 00:17:24] Running autolearn (train)...
+Fetching completed rounds...
+  Found 18 completed round(s) (18 participated, 0 unparticipated)
+
+Round 18  (b0f9d1bf-4b71-4e6e-816c-19c718d29056)  [participated]:
+  Seed 0: score=65.5361  1359 training cells  er=0.120
+  Seed 1: score=64.7302  1359 training cells  er=0.120
+  Seed 2: score=61.6531  1375 training cells  er=0.120
+  Seed 3: score=66.3089  1368 training cells  er=0.120
+  Seed 4: score=62.5743  1360 training cells  er=0.120
+
+Round 17  (3eb0c25d-28fa-48ca-b8e1-fc249e3918e9)  [participated]:
+  Seed 0: score=65.1559  1381 training cells  er=0.111
+  Seed 1: score=65.7664  1354 training cells  er=0.111
+  Seed 2: score=67.0085  1341 training cells  er=0.111
+  Seed 3: score=67.071  1335 training cells  er=0.111
+  Seed 4: score=67.9628  1346 training cells  er=0.111
+
+Round 16  (8f664aed-8839-4c85-bed0-77a2cac7c6f5)  [participated]:
