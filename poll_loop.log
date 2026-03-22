@@ -610,3 +610,41 @@ Saved model weights → model_weights.json
 Done. Model weights will be used automatically for future predictions.
 [2026-03-22 00:19:52] Running self-review (code quality check)...
 [2026-03-22 00:19:52] Running self-review (code quality check)...
+I need write permissions. Here's a summary of all issues found and the fixes needed:
+
+---
+
+### Issues Found
+
+**`backtest.py` line 31** — stale comment:
+```python
+N_FEATURES_NEW = learned_model.N_FEATURES   # 13
+```
+`N_FEATURES` is 14, not 13. The 14 features are listed correctly in `learned_model.py`'s constant definition.
+
+---
+
+**`test_harness.py` lines 134–138** — `winter_severity=0.25` is wildly out of calibration range:
+```python
+def _run_simulation(initial_grid, initial_settlements, rng,
+                    expansion_rate=0.12, winter_severity=0.25):
+```
+The calibrated range (from `infer_params_from_obs` / `simulation.py`) is `0.04–0.15`. A value of `0.25` causes near-total settlement collapse in every mock test run, making test harness results unrealistically pessimistic and not representative of real game conditions. Should be `0.05`.
+
+---
+
+**`main.py` lines 330–334** — `total_sett_obs` is computed but never used:
+```python
+total_sett_obs = sum(
+    1 for s in initial_states for y, row in enumerate(s["grid"])
+    for x, v in enumerate(row) if v in {config.TERRAIN_SETTLEMENT, config.TERRAIN_PORT}
+    if f"{x},{y}" in observations.get(str(initial_states.index(s)), {})
+)
+```
+This dead code also uses `initial_states.index(s)` which performs dict equality comparisons on each iteration (O(n²)), and would incorrectly map duplicate-valued dicts to index 0. Should be removed entirely.
+
+---
+
+Please grant write permissions and I'll apply all three fixes.
+[2026-03-22 00:22:58] Committing and pushing changes...
+[2026-03-22 00:22:58] Committing and pushing changes...
