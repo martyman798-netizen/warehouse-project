@@ -354,3 +354,24 @@ branch 'claude/viking-prediction-model-WXUyO' set up to track 'origin/claude/vik
 [2026-03-21 23:49:09] Round b0f9d1bf-4b71-4e6e-816c-19c718d29056 complete.
 [2026-03-21 23:49:09] Sleeping 4500s until next check...
 [2026-03-21 23:49:09] Sleeping 4500s until next check...
+[2026-03-22 00:15:58] === Poll loop started (interval=4500s / 75 min) ===
+[2026-03-22 00:15:58] === Poll loop started (interval=4500s / 75 min) ===
+[2026-03-22 00:15:58] --- Checking for active round ---
+[2026-03-22 00:15:58] --- Checking for active round ---
+[2026-03-22 00:16:05] Status: Round: 597e60cf-d1a1-4627-ac4d-2a61da68b6df
+Budget: 0/50 queries used
+Active: True
+[2026-03-22 00:16:05] Status: Round: 597e60cf-d1a1-4627-ac4d-2a61da68b6df
+Budget: 0/50 queries used
+Active: True
+[2026-03-22 00:16:05] New active round: 597e60cf-d1a1-4627-ac4d-2a61da68b6df (queries used: 0)
+[2026-03-22 00:16:05] New active round: 597e60cf-d1a1-4627-ac4d-2a61da68b6df (queries used: 0)
+[2026-03-22 00:16:05] Running full pipeline (observe + predict)...
+[2026-03-22 00:16:05] Running full pipeline (observe + predict)...
+Fetching round 597e60cf-d1a1-4627-ac4d-2a61da68b6df...
+  Map: 40×40, 5 seeds
+  Budget: 0/50 used, 50 remaining
+  Will use up to 50 queries this run
+
+Phase 1: 45 coverage tiles
+  P1 [  1/45] seed=0 viewport=(15,15)  15×15 ... 
