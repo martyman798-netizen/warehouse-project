@@ -376,14 +376,23 @@ def compute_prediction(
                     expansion_rate=expansion_rate,
                 )
                 if learned is not None:
-                    # 60% MC (round-specific mechanics) + 40% learned (real game data).
-                    # The learned model is trained directly on the server's ground truth
-                    # and corrects for systematic simulation errors (wrong mechanics,
-                    # parameter mismatch).  Increasing its weight from 25% → 40% reduces
-                    # the impact of simulation bias, especially on mild/moderate rounds
-                    # where territorial-conflict mortality in our simulator inflates
-                    # predicted collapse rates relative to the real game.
-                    prior = 0.60 * mc + 0.40 * learned
+                    # Adaptive blend: weight MC vs learned model based on harshness.
+                    #
+                    # Very harsh rounds (er < 0.04): learned model gets higher weight
+                    # because our simulation over-predicts Ruin (ruins revert to Empty
+                    # in the real game much faster than our simple 35%-per-year rule).
+                    # The learned model, trained on real GT, knows the correct Empty/
+                    # Forest proportions for harsh rounds.
+                    #
+                    # Mild rounds (er > 0.08): MC gets higher weight because the
+                    # expansion dynamics (where settlements spread to empty cells) are
+                    # captured by the 50-year simulation but not by spatial features.
+                    #
+                    # er range: [0.02 harsh .. 0.12 mild]
+                    # mc_weight range: [0.45 harsh .. 0.75 mild]
+                    mc_weight = 0.45 + (expansion_rate - 0.02) / 0.10 * 0.30
+                    mc_weight = max(0.45, min(0.75, mc_weight))
+                    prior = mc_weight * mc + (1.0 - mc_weight) * learned
                 else:
                     prior = mc
             else:
@@ -430,27 +439,40 @@ def compute_prediction(
 
             # --- Adjust collapse probability for settlement / port cells ---
             if terrain in {config.TERRAIN_SETTLEMENT, config.TERRAIN_PORT}:
-                # Fraction of observed runs where this settlement was dead at year 50
+                # Fraction of observed runs where this settlement was dead at year 50.
+                # When observed deaths are high, reduce Settlement/Port probability and
+                # redirect mass to Empty (NOT Ruin).
+                #
+                # Rationale: in the real game, dead settlements produce Ruins which then
+                # revert to Empty/Forest over 50 years via the Environment phase.  The MC
+                # prior already models this ruin-reversion correctly; the old code added
+                # extra Ruin probability on top, which *doubled* the Ruin over-prediction
+                # (confirmed in R22 analysis: we predicted 7% Ruin, GT showed 1.6%).
+                #
+                # Splitting the redirect: mostly Empty (70%) + some Forest (30%) mirrors
+                # the observed GT distribution for former settlement cells on harsh rounds.
                 if frac_dead > 0:
-                    collapse_boost = min(0.25, frac_dead * 0.35)
-                    prediction[sy, sx, R] += collapse_boost
+                    collapse_boost = min(0.20, frac_dead * 0.25)
+                    prediction[sy, sx, E] += collapse_boost * 0.70
+                    prediction[sy, sx, F] += collapse_boost * 0.30
                     if terrain == config.TERRAIN_SETTLEMENT:
                         prediction[sy, sx, S] = max(0.01, prediction[sy, sx, S] - collapse_boost)
                     else:
                         prediction[sy, sx, P] = max(0.01, prediction[sy, sx, P] - collapse_boost)
 
-                # Very low food → stressed even in surviving runs
+                # Very low food → stressed even in surviving runs → also redirect to Empty
                 if avg_food < 0.3:
-                    food_risk = (0.3 - avg_food) / 0.3 * 0.10
-                    prediction[sy, sx, R] += food_risk
+                    food_risk = (0.3 - avg_food) / 0.3 * 0.08
+                    prediction[sy, sx, E] += food_risk * 0.60
+                    prediction[sy, sx, F] += food_risk * 0.40
                     prediction[sy, sx, S] = max(0.01, prediction[sy, sx, S] - food_risk * 0.7)
                     prediction[sy, sx, P] = max(0.01, prediction[sy, sx, P] - food_risk * 0.3)
 
                 # Pop/food imbalance: high population draining low food = imminent collapse
                 stress_ratio = avg_pop / max(0.1, avg_food)
                 if stress_ratio > 4.0 and avg_food < 0.4:
-                    crisis_boost = min(0.10, (stress_ratio - 4.0) * 0.02)
-                    prediction[sy, sx, R] += crisis_boost
+                    crisis_boost = min(0.08, (stress_ratio - 4.0) * 0.015)
+                    prediction[sy, sx, E] += crisis_boost
                     prediction[sy, sx, S] = max(0.01, prediction[sy, sx, S] - crisis_boost)
 
                 # Wealthy + coastal → likely to develop/maintain a port
