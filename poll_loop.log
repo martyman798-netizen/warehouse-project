@@ -1,0 +1,659 @@
+[2026-03-21 22:49:03] === Poll loop started (interval=4500s / 75 min) ===
+[2026-03-21 22:49:03] --- Checking for active round ---
+[2026-03-21 22:49:08] Status: Round: b0f9d1bf-4b71-4e6e-816c-19c718d29056
+Budget: 50/50 queries used
+Active: True
+[2026-03-21 22:49:08] New active round: b0f9d1bf-4b71-4e6e-816c-19c718d29056 (queries used: 50)
+[2026-03-21 22:49:08] Queries already spent — running predict only...
+Fetching round b0f9d1bf-4b71-4e6e-816c-19c718d29056...
+  Map: 40×40, 5 seeds
+  Pooled round params: er=0.117 ws=0.043 fd=0.022
+  Seed 0: running MC simulation (100 runs)... done
+  Seed 1: running MC simulation (100 runs)... done
+  Seed 2: running MC simulation (100 runs)... done
+  Seed 3: running MC simulation (100 runs)... done
+  Seed 4: running MC simulation (100 runs)... done
+  Seed 0: computing prediction (1825 obs, 635 settlement-stat cells)... done
+    Most likely classes: Empty:1168, Settlement:70, Port:4, Forest:334, Mountain:24
+  Seed 1: computing prediction (1825 obs, 532 settlement-stat cells)... done
+    Most likely classes: Empty:1130, Settlement:55, Port:2, Forest:373, Mountain:40
+  Seed 2: computing prediction (1825 obs, 668 settlement-stat cells)... done
+    Most likely classes: Empty:1211, Settlement:60, Port:2, Forest:312, Mountain:15
+  Seed 3: computing prediction (1825 obs, 412 settlement-stat cells)... done
+    Most likely classes: Empty:1184, Settlement:30, Port:1, Forest:349, Mountain:36
+  Seed 4: computing prediction (1825 obs, 666 settlement-stat cells)... done
+    Most likely classes: Empty:1095, Settlement:111, Port:5, Forest:344, Mountain:45
+  Saved predictions → predictions.json
+[2026-03-21 22:52:15] Submitting all seeds...
+  Seed 0: submitting... status=accepted
+  Seed 1: submitting... status=accepted
+  Seed 2: submitting... status=accepted
+  Seed 3: submitting... status=accepted
+  Seed 4: submitting... status=accepted
+[2026-03-21 22:52:23] Running autolearn (train)...
+Fetching completed rounds...
+  Found 17 completed round(s) (17 participated, 0 unparticipated)
+
+Round 17  (3eb0c25d-28fa-48ca-b8e1-fc249e3918e9)  [participated]:
+  Seed 0: score=65.1559  1381 training cells  er=0.111
+  Seed 1: score=65.7664  1354 training cells  er=0.111
+  Seed 2: score=67.0085  1341 training cells  er=0.111
+  Seed 3: score=67.071  1335 training cells  er=0.111
+  Seed 4: score=67.9628  1346 training cells  er=0.111
+
+Round 16  (8f664aed-8839-4c85-bed0-77a2cac7c6f5)  [participated]:
+  Seed 0: score=52.5766  1353 training cells  er=0.036
+  Seed 1: score=53.0566  1389 training cells  er=0.036
+  Seed 2: score=56.1122  1385 training cells  er=0.036
+  Seed 3: score=54.0671  1358 training cells  er=0.036
+  Seed 4: score=52.9368  1401 training cells  er=0.036
+
+Round 15  (cc5442dd-bc5d-418b-911b-7eb960cb0390)  [participated]:
+  Seed 0: score=41.9721  1395 training cells  er=0.029
+  Seed 1: score=38.9745  1366 training cells  er=0.029
+  Seed 2: score=35.8893  1354 training cells  er=0.029
+  Seed 3: score=40.5081  1380 training cells  er=0.029
+  Seed 4: score=34.2011  1363 training cells  er=0.029
+
+Round 14  (d0a2c894-2162-4d49-86cf-435b9013f3b8)  [participated]:
+  Seed 0: score=33.8895  1388 training cells  er=0.103
+  Seed 1: score=35.9828  1405 training cells  er=0.103
+  Seed 2: score=35.3453  1387 training cells  er=0.103
+  Seed 3: score=34.4888  1376 training cells  er=0.103
+  Seed 4: score=35.7518  1368 training cells  er=0.103
+
+Round 13  (7b4bda99-6165-4221-97cc-27880f5e6d95)  [participated]:
+  Seed 0: score=None  1384 training cells  er=0.020
+  Seed 1: score=None  1350 training cells  er=0.020
+  Seed 2: score=None  1359 training cells  er=0.020
+  Seed 3: score=None  1382 training cells  er=0.020
+  Seed 4: score=None  1363 training cells  er=0.020
+
+Round 12  (795bfb1f-54bd-4f39-a526-9868b36f7ebd)  [participated]:
+  Seed 0: score=None  1362 training cells  er=0.100
+  Seed 1: score=None  1362 training cells  er=0.100
+  Seed 2: score=None  1330 training cells  er=0.100
+  Seed 3: score=None  1356 training cells  er=0.100
+  Seed 4: score=None  1368 training cells  er=0.100
+
+Round 11  (324fde07-1670-4202-b199-7aa92ecb40ee)  [participated]:
+  Seed 0: score=None  1348 training cells  er=0.111
+  Seed 1: score=None  1333 training cells  er=0.111
+  Seed 2: score=None  1351 training cells  er=0.111
+  Seed 3: score=None  1325 training cells  er=0.111
+  Seed 4: score=None  1318 training cells  er=0.111
+
+Round 10  (75e625c3-60cb-4392-af3e-c86a98bde8c2)  [participated]:
+  Seed 0: score=52.1469  1373 training cells  er=0.020
+  Seed 1: score=46.7218  1381 training cells  er=0.020
+  Seed 2: score=35.8093  1345 training cells  er=0.020
+  Seed 3: score=47.0867  1399 training cells  er=0.020
+  Seed 4: score=45.6937  1334 training cells  er=0.020
+
+Round 9  (2a341ace-0f57-4309-9b89-e59fe0f09179)  [participated]:
+  Seed 0: score=46.3707  1327 training cells  er=0.020
+  Seed 1: score=21.3695  1357 training cells  er=0.020
+  Seed 2: score=24.1893  1396 training cells  er=0.020
+  Seed 3: score=26.1967  1356 training cells  er=0.020
+  Seed 4: score=21.3  1352 training cells  er=0.020
+
+Round 8  (c5cdf100-a876-4fb7-b5d8-757162c97989)  [participated]:
+  Seed 0: score=48.1629  1350 training cells  er=0.020
+  Seed 1: score=52.7621  1354 training cells  er=0.020
+  Seed 2: score=46.2535  1365 training cells  er=0.020
+  Seed 3: score=49.9218  1343 training cells  er=0.020
+  Seed 4: score=50.2729  1384 training cells  er=0.020
+
+Round 7  (36e581f1-73f8-453f-ab98-cbe3052b701b)  [participated]:
+  Seed 0: score=37.3362  1353 training cells  er=0.090
+  Seed 1: score=39.279  1382 training cells  er=0.090
+  Seed 2: score=37.0136  1361 training cells  er=0.090
+  Seed 3: score=38.6243  1381 training cells  er=0.090
+  Seed 4: score=36.5054  1351 training cells  er=0.090
+
+Round 6  (ae78003a-4efe-425a-881a-d16a39bca0ad)  [participated]:
+  Seed 0: score=50.0622  1394 training cells  er=0.084
+  Seed 1: score=48.698  1358 training cells  er=0.084
+  Seed 2: score=46.9908  1319 training cells  er=0.084
+  Seed 3: score=48.7461  1385 training cells  er=0.084
+  Seed 4: score=50.3341  1378 training cells  er=0.084
+
+Round 5  (fd3c92ff-3178-4dc9-8d9b-acf389b3982b)  [participated]:
+  Seed 0: score=None  1386 training cells  er=0.055
+  Seed 1: score=None  1387 training cells  er=0.055
+  Seed 2: score=None  1358 training cells  er=0.055
+  Seed 3: score=None  1322 training cells  er=0.055
+  Seed 4: score=None  1357 training cells  er=0.055
+
+Round 4  (8e839974-b13b-407b-a5e7-fc749d877195)  [participated]:
+  Seed 0: score=None  1359 training cells  er=0.020
+  Seed 1: score=None  1373 training cells  er=0.020
+  Seed 2: score=None  1317 training cells  er=0.020
+  Seed 3: score=None  1325 training cells  er=0.020
+  Seed 4: score=None  1384 training cells  er=0.020
+
+Round 3  (f1dac9a9-5cf1-49a9-8f17-d6cb5d5ba5cb)  [participated]:
+  Seed 0: score=None  1326 training cells  er=0.020
+  Seed 1: score=None  1362 training cells  er=0.020
+  Seed 2: score=None  1352 training cells  er=0.020
+  Seed 3: score=None  1339 training cells  er=0.020
+  Seed 4: score=None  1382 training cells  er=0.020
+
+Round 2  (76909e29-f664-4b2f-b16b-61b7507277e9)  [participated]:
+  Seed 0: score=None  1388 training cells  er=0.108
+  Seed 1: score=None  1354 training cells  er=0.108
+  Seed 2: score=None  1332 training cells  er=0.108
+  Seed 3: score=None  1339 training cells  er=0.108
+  Seed 4: score=None  1372 training cells  er=0.108
+
+Round 1  (71451d74-be9f-471f-aacd-a41f3b68a9cd)  [participated]:
+  Seed 0: score=None  1375 training cells  er=0.087
+  Seed 1: score=None  1335 training cells  er=0.087
+  Seed 2: score=None  1370 training cells  er=0.087
+  Seed 3: score=None  1370 training cells  er=0.087
+  Seed 4: score=None  1363 training cells  er=0.087
+
+Training on 115,721 samples (17 round(s) × up to 5 seeds)...
+  Settlement   n= 3784  CE=1.1740  converged=True
+  Port         n=  146  CE=1.3015  converged=True
+  Forest       n=29017  CE=0.7955  converged=True
+  Plains       n=82774  CE=0.6847  converged=True
+Saved model weights → model_weights.json
+
+Done. Model weights will be used automatically for future predictions.
+[2026-03-21 22:55:35] Committing and pushing changes...
+[claude/viking-prediction-model-WXUyO a26613a] Auto: R20260321-2255 observe+predict+submit+train
+ 3 files changed, 225 insertions(+), 1 deletion(-)
+ create mode 100644 poll_loop.log
+ create mode 100755 poll_loop.sh
+To http://127.0.0.1:39325/git/martyman798-netizen/warehouse-project
+   081f57e..a26613a  claude/viking-prediction-model-WXUyO -> claude/viking-prediction-model-WXUyO
+branch 'claude/viking-prediction-model-WXUyO' set up to track 'origin/claude/viking-prediction-model-WXUyO'.
+[2026-03-21 22:55:36] Round b0f9d1bf-4b71-4e6e-816c-19c718d29056 complete.
+[2026-03-21 22:55:36] Sleeping 4500s until next check...
+[2026-03-21 23:43:48] === Poll loop started (interval=4500s / 75 min) ===
+[2026-03-21 23:43:48] === Poll loop started (interval=4500s / 75 min) ===
+[2026-03-21 23:43:48] --- Checking for active round ---
+[2026-03-21 23:43:48] --- Checking for active round ---
+[2026-03-21 23:43:52] Status: Round: b0f9d1bf-4b71-4e6e-816c-19c718d29056
+Budget: 50/50 queries used
+Active: True
+[2026-03-21 23:43:52] Status: Round: b0f9d1bf-4b71-4e6e-816c-19c718d29056
+Budget: 50/50 queries used
+Active: True
+[2026-03-21 23:43:52] New active round: b0f9d1bf-4b71-4e6e-816c-19c718d29056 (queries used: 50)
+[2026-03-21 23:43:52] New active round: b0f9d1bf-4b71-4e6e-816c-19c718d29056 (queries used: 50)
+[2026-03-21 23:43:52] Queries already spent — running predict only...
+[2026-03-21 23:43:52] Queries already spent — running predict only...
+Fetching round b0f9d1bf-4b71-4e6e-816c-19c718d29056...
+  Map: 40×40, 5 seeds
+  Pooled round params: er=0.117 ws=0.043 fd=0.022
+  Seed 0: running MC simulation (100 runs)... done
+  Seed 1: running MC simulation (100 runs)... done
+  Seed 2: running MC simulation (100 runs)... done
+  Seed 3: running MC simulation (100 runs)... done
+  Seed 4: running MC simulation (100 runs)... done
+  Seed 0: computing prediction (1825 obs, 635 settlement-stat cells)... done
+    Most likely classes: Empty:1166, Settlement:72, Port:4, Forest:334, Mountain:24
+  Seed 1: computing prediction (1825 obs, 532 settlement-stat cells)... done
+    Most likely classes: Empty:1127, Settlement:58, Port:2, Forest:373, Mountain:40
+  Seed 2: computing prediction (1825 obs, 668 settlement-stat cells)... done
+    Most likely classes: Empty:1210, Settlement:63, Port:2, Forest:310, Mountain:15
+  Seed 3: computing prediction (1825 obs, 412 settlement-stat cells)... done
+    Most likely classes: Empty:1184, Settlement:30, Port:1, Forest:349, Mountain:36
+  Seed 4: computing prediction (1825 obs, 666 settlement-stat cells)... done
+    Most likely classes: Empty:1091, Settlement:117, Port:5, Forest:342, Mountain:45
+  Saved predictions → predictions.json
+[2026-03-21 23:47:01] Submitting all seeds...
+[2026-03-21 23:47:01] Submitting all seeds...
+  Seed 0: submitting... status=accepted
+  Seed 1: submitting... status=accepted
+  Seed 2: submitting... status=accepted
+  Seed 3: submitting... status=accepted
+  Seed 4: submitting... status=accepted
+[2026-03-21 23:47:07] Running autolearn (train)...
+[2026-03-21 23:47:07] Running autolearn (train)...
+Fetching completed rounds...
+  Found 17 completed round(s) (17 participated, 0 unparticipated)
+
+Round 17  (3eb0c25d-28fa-48ca-b8e1-fc249e3918e9)  [participated]:
+  Seed 0: score=65.1559  1381 training cells  er=0.111
+  Seed 1: score=65.7664  1354 training cells  er=0.111
+  Seed 2: score=67.0085  1341 training cells  er=0.111
+  Seed 3: score=67.071  1335 training cells  er=0.111
+  Seed 4: score=67.9628  1346 training cells  er=0.111
+
+Round 16  (8f664aed-8839-4c85-bed0-77a2cac7c6f5)  [participated]:
+  Seed 0: score=52.5766  1353 training cells  er=0.036
+  Seed 1: score=53.0566  1389 training cells  er=0.036
+  Seed 2: score=56.1122  1385 training cells  er=0.036
+  Seed 3: score=54.0671  1358 training cells  er=0.036
+  Seed 4: score=52.9368  1401 training cells  er=0.036
+
+Round 15  (cc5442dd-bc5d-418b-911b-7eb960cb0390)  [participated]:
+  Seed 0: score=41.9721  1395 training cells  er=0.029
+  Seed 1: score=38.9745  1366 training cells  er=0.029
+  Seed 2: score=35.8893  1354 training cells  er=0.029
+  Seed 3: score=40.5081  1380 training cells  er=0.029
+  Seed 4: score=34.2011  1363 training cells  er=0.029
+
+Round 14  (d0a2c894-2162-4d49-86cf-435b9013f3b8)  [participated]:
+  Seed 0: score=33.8895  1388 training cells  er=0.103
+  Seed 1: score=35.9828  1405 training cells  er=0.103
+  Seed 2: score=35.3453  1387 training cells  er=0.103
+  Seed 3: score=34.4888  1376 training cells  er=0.103
+  Seed 4: score=35.7518  1368 training cells  er=0.103
+
+Round 13  (7b4bda99-6165-4221-97cc-27880f5e6d95)  [participated]:
+  Seed 0: score=None  1384 training cells  er=0.020
+  Seed 1: score=None  1350 training cells  er=0.020
+  Seed 2: score=None  1359 training cells  er=0.020
+  Seed 3: score=None  1382 training cells  er=0.020
+  Seed 4: score=None  1363 training cells  er=0.020
+
+Round 12  (795bfb1f-54bd-4f39-a526-9868b36f7ebd)  [participated]:
+  Seed 0: score=None  1362 training cells  er=0.100
+  Seed 1: score=None  1362 training cells  er=0.100
+  Seed 2: score=None  1330 training cells  er=0.100
+  Seed 3: score=None  1356 training cells  er=0.100
+  Seed 4: score=None  1368 training cells  er=0.100
+
+Round 11  (324fde07-1670-4202-b199-7aa92ecb40ee)  [participated]:
+  Seed 0: score=None  1348 training cells  er=0.111
+  Seed 1: score=None  1333 training cells  er=0.111
+  Seed 2: score=None  1351 training cells  er=0.111
+  Seed 3: score=None  1325 training cells  er=0.111
+  Seed 4: score=None  1318 training cells  er=0.111
+
+Round 10  (75e625c3-60cb-4392-af3e-c86a98bde8c2)  [participated]:
+  Seed 0: score=52.1469  1373 training cells  er=0.020
+  Seed 1: score=46.7218  1381 training cells  er=0.020
+  Seed 2: score=35.8093  1345 training cells  er=0.020
+  Seed 3: score=47.0867  1399 training cells  er=0.020
+  Seed 4: score=45.6937  1334 training cells  er=0.020
+
+Round 9  (2a341ace-0f57-4309-9b89-e59fe0f09179)  [participated]:
+  Seed 0: score=46.3707  1327 training cells  er=0.020
+  Seed 1: score=21.3695  1357 training cells  er=0.020
+  Seed 2: score=24.1893  1396 training cells  er=0.020
+  Seed 3: score=26.1967  1356 training cells  er=0.020
+  Seed 4: score=21.3  1352 training cells  er=0.020
+
+Round 8  (c5cdf100-a876-4fb7-b5d8-757162c97989)  [participated]:
+  Seed 0: score=48.1629  1350 training cells  er=0.020
+  Seed 1: score=52.7621  1354 training cells  er=0.020
+  Seed 2: score=46.2535  1365 training cells  er=0.020
+  Seed 3: score=49.9218  1343 training cells  er=0.020
+  Seed 4: score=50.2729  1384 training cells  er=0.020
+
+Round 7  (36e581f1-73f8-453f-ab98-cbe3052b701b)  [participated]:
+  Seed 0: score=37.3362  1353 training cells  er=0.090
+  Seed 1: score=39.279  1382 training cells  er=0.090
+  Seed 2: score=37.0136  1361 training cells  er=0.090
+  Seed 3: score=38.6243  1381 training cells  er=0.090
+  Seed 4: score=36.5054  1351 training cells  er=0.090
+
+Round 6  (ae78003a-4efe-425a-881a-d16a39bca0ad)  [participated]:
+  Seed 0: score=50.0622  1394 training cells  er=0.084
+  Seed 1: score=48.698  1358 training cells  er=0.084
+  Seed 2: score=46.9908  1319 training cells  er=0.084
+  Seed 3: score=48.7461  1385 training cells  er=0.084
+  Seed 4: score=50.3341  1378 training cells  er=0.084
+
+Round 5  (fd3c92ff-3178-4dc9-8d9b-acf389b3982b)  [participated]:
+  Seed 0: score=None  1386 training cells  er=0.055
+  Seed 1: score=None  1387 training cells  er=0.055
+  Seed 2: score=None  1358 training cells  er=0.055
+  Seed 3: score=None  1322 training cells  er=0.055
+  Seed 4: score=None  1357 training cells  er=0.055
+
+Round 4  (8e839974-b13b-407b-a5e7-fc749d877195)  [participated]:
+  Seed 0: score=None  1359 training cells  er=0.020
+  Seed 1: score=None  1373 training cells  er=0.020
+  Seed 2: score=None  1317 training cells  er=0.020
+  Seed 3: score=None  1325 training cells  er=0.020
+  Seed 4: score=None  1384 training cells  er=0.020
+
+Round 3  (f1dac9a9-5cf1-49a9-8f17-d6cb5d5ba5cb)  [participated]:
+  Seed 0: score=None  1326 training cells  er=0.020
+  Seed 1: score=None  1362 training cells  er=0.020
+  Seed 2: score=None  1352 training cells  er=0.020
+  Seed 3: score=None  1339 training cells  er=0.020
+  Seed 4: score=None  1382 training cells  er=0.020
+
+Round 2  (76909e29-f664-4b2f-b16b-61b7507277e9)  [participated]:
+  Seed 0: score=None  1388 training cells  er=0.108
+  Seed 1: score=None  1354 training cells  er=0.108
+  Seed 2: score=None  1332 training cells  er=0.108
+  Seed 3: score=None  1339 training cells  er=0.108
+  Seed 4: score=None  1372 training cells  er=0.108
+
+Round 1  (71451d74-be9f-471f-aacd-a41f3b68a9cd)  [participated]:
+  Seed 0: score=None  1375 training cells  er=0.087
+  Seed 1: score=None  1335 training cells  er=0.087
+  Seed 2: score=None  1370 training cells  er=0.087
+  Seed 3: score=None  1370 training cells  er=0.087
+  Seed 4: score=None  1363 training cells  er=0.087
+
+Training on 115,721 samples (17 round(s) × up to 5 seeds)...
+  Settlement   n= 3784  CE=1.1740  converged=True
+  Port         n=  146  CE=1.3015  converged=True
+  Forest       n=29017  CE=0.7955  converged=True
+  Plains       n=82774  CE=0.6847  converged=True
+Saved model weights → model_weights.json
+
+Done. Model weights will be used automatically for future predictions.
+[2026-03-21 23:49:08] Committing and pushing changes...
+[2026-03-21 23:49:08] Committing and pushing changes...
+[claude/viking-prediction-model-WXUyO 0a123bb] Auto: R20260321-2349 observe+predict+submit+train
+ 1 file changed, 70 insertions(+)
+To http://127.0.0.1:37663/git/martyman798-netizen/warehouse-project
+   304fb9e..0a123bb  claude/viking-prediction-model-WXUyO -> claude/viking-prediction-model-WXUyO
+branch 'claude/viking-prediction-model-WXUyO' set up to track 'origin/claude/viking-prediction-model-WXUyO'.
+[2026-03-21 23:49:09] Round b0f9d1bf-4b71-4e6e-816c-19c718d29056 complete.
+[2026-03-21 23:49:09] Round b0f9d1bf-4b71-4e6e-816c-19c718d29056 complete.
+[2026-03-21 23:49:09] Sleeping 4500s until next check...
+[2026-03-21 23:49:09] Sleeping 4500s until next check...
+[2026-03-22 00:15:58] === Poll loop started (interval=4500s / 75 min) ===
+[2026-03-22 00:15:58] === Poll loop started (interval=4500s / 75 min) ===
+[2026-03-22 00:15:58] --- Checking for active round ---
+[2026-03-22 00:15:58] --- Checking for active round ---
+[2026-03-22 00:16:05] Status: Round: 597e60cf-d1a1-4627-ac4d-2a61da68b6df
+Budget: 0/50 queries used
+Active: True
+[2026-03-22 00:16:05] Status: Round: 597e60cf-d1a1-4627-ac4d-2a61da68b6df
+Budget: 0/50 queries used
+Active: True
+[2026-03-22 00:16:05] New active round: 597e60cf-d1a1-4627-ac4d-2a61da68b6df (queries used: 0)
+[2026-03-22 00:16:05] New active round: 597e60cf-d1a1-4627-ac4d-2a61da68b6df (queries used: 0)
+[2026-03-22 00:16:05] Running full pipeline (observe + predict)...
+[2026-03-22 00:16:05] Running full pipeline (observe + predict)...
+Fetching round 597e60cf-d1a1-4627-ac4d-2a61da68b6df...
+  Map: 40×40, 5 seeds
+  Budget: 0/50 used, 50 remaining
+  Will use up to 50 queries this run
+
+Phase 1: 45 coverage tiles
+  P1 [  1/45] seed=0 viewport=(15,15)  15×15 ... done  (1/50 queries used)
+  P1 [  2/45] seed=0 viewport=(15,0)  15×15 ... done  (2/50 queries used)
+  P1 [  3/45] seed=0 viewport=(0,15)  15×15 ... done  (3/50 queries used)
+  P1 [  4/45] seed=0 viewport=(0,0)  15×15 ... done  (4/50 queries used)
+  P1 [  5/45] seed=0 viewport=(15,30)  15×10 ... done  (5/50 queries used)
+  P1 [  6/45] seed=0 viewport=(30,15)  10×15 ... done  (6/50 queries used)
+  P1 [  7/45] seed=0 viewport=(0,30)  15×10 ... done  (7/50 queries used)
+  P1 [  8/45] seed=0 viewport=(30,0)  10×15 ... done  (8/50 queries used)
+  P1 [  9/45] seed=0 viewport=(30,30)  10×10 ... done  (9/50 queries used)
+  P1 [ 10/45] seed=1 viewport=(15,15)  15×15 ... done  (10/50 queries used)
+  P1 [ 11/45] seed=1 viewport=(15,0)  15×15 ... done  (11/50 queries used)
+  P1 [ 12/45] seed=1 viewport=(0,15)  15×15 ... done  (12/50 queries used)
+  P1 [ 13/45] seed=1 viewport=(0,0)  15×15 ... done  (13/50 queries used)
+  P1 [ 14/45] seed=1 viewport=(30,15)  10×15 ... done  (14/50 queries used)
+  P1 [ 15/45] seed=1 viewport=(30,0)  10×15 ... done  (15/50 queries used)
+  P1 [ 16/45] seed=1 viewport=(15,30)  15×10 ... done  (16/50 queries used)
+  P1 [ 17/45] seed=1 viewport=(0,30)  15×10 ... done  (17/50 queries used)
+  P1 [ 18/45] seed=1 viewport=(30,30)  10×10 ... done  (18/50 queries used)
+  P1 [ 19/45] seed=2 viewport=(0,15)  15×15 ... done  (19/50 queries used)
+  P1 [ 20/45] seed=2 viewport=(15,0)  15×15 ... done  (20/50 queries used)
+  P1 [ 21/45] seed=2 viewport=(15,15)  15×15 ... done  (21/50 queries used)
+  P1 [ 22/45] seed=2 viewport=(0,0)  15×15 ... done  (22/50 queries used)
+  P1 [ 23/45] seed=2 viewport=(15,30)  15×10 ... done  (23/50 queries used)
+  P1 [ 24/45] seed=2 viewport=(30,15)  10×15 ... done  (24/50 queries used)
+  P1 [ 25/45] seed=2 viewport=(0,30)  15×10 ... done  (25/50 queries used)
+  P1 [ 26/45] seed=2 viewport=(30,0)  10×15 ... done  (26/50 queries used)
+  P1 [ 27/45] seed=2 viewport=(30,30)  10×10 ... done  (27/50 queries used)
+  P1 [ 28/45] seed=3 viewport=(15,0)  15×15 ... done  (28/50 queries used)
+  P1 [ 29/45] seed=3 viewport=(0,15)  15×15 ... done  (29/50 queries used)
+  P1 [ 30/45] seed=3 viewport=(15,15)  15×15 ... done  (30/50 queries used)
+  P1 [ 31/45] seed=3 viewport=(0,0)  15×15 ... done  (31/50 queries used)
+  P1 [ 32/45] seed=3 viewport=(30,15)  10×15 ... done  (32/50 queries used)
+  P1 [ 33/45] seed=3 viewport=(15,30)  15×10 ... done  (33/50 queries used)
+  P1 [ 34/45] seed=3 viewport=(30,0)  10×15 ... done  (34/50 queries used)
+  P1 [ 35/45] seed=3 viewport=(0,30)  15×10 ... done  (35/50 queries used)
+  P1 [ 36/45] seed=3 viewport=(30,30)  10×10 ... done  (36/50 queries used)
+  P1 [ 37/45] seed=4 viewport=(15,15)  15×15 ... done  (37/50 queries used)
+  P1 [ 38/45] seed=4 viewport=(15,0)  15×15 ... done  (38/50 queries used)
+  P1 [ 39/45] seed=4 viewport=(0,15)  15×15 ... done  (39/50 queries used)
+  P1 [ 40/45] seed=4 viewport=(0,0)  15×15 ... done  (40/50 queries used)
+  P1 [ 41/45] seed=4 viewport=(30,0)  10×15 ... done  (41/50 queries used)
+  P1 [ 42/45] seed=4 viewport=(0,30)  15×10 ... done  (42/50 queries used)
+  P1 [ 43/45] seed=4 viewport=(30,15)  10×15 ... done  (43/50 queries used)
+  P1 [ 44/45] seed=4 viewport=(15,30)  15×10 ... done  (44/50 queries used)
+  P1 [ 45/45] seed=4 viewport=(30,30)  10×10 ... done  (45/50 queries used)
+  Saved observations → observations.json
+
+Phase 2: 5 settlement-cluster queries across 5 seeds
+  Settlement-cluster alloc: s0:1 s1:1 s2:1 s3:1 s4:1
+Total observations planned: 5
+  Seed 0: 1 queries
+  Seed 1: 1 queries
+  Seed 2: 1 queries
+  Seed 3: 1 queries
+  Seed 4: 1 queries
+  P2 [  1/5] seed=0 viewport=(21,2)  15×15 ... done  (46/50 queries used)
+  P2 [  2/5] seed=1 viewport=(17,2)  15×15 ... done  (47/50 queries used)
+  P2 [  3/5] seed=2 viewport=(3,1)  15×15 ... done  (48/50 queries used)
+  P2 [  4/5] seed=3 viewport=(4,2)  15×15 ... done  (49/50 queries used)
+  P2 [  5/5] seed=4 viewport=(9,1)  15×15 ... done  (50/50 queries used)
+  Saved observations → observations.json
+  Seed 0: 1600 unique cells observed, 1825 total observations
+  Seed 1: 1600 unique cells observed, 1825 total observations
+  Seed 2: 1600 unique cells observed, 1825 total observations
+  Seed 3: 1600 unique cells observed, 1825 total observations
+  Seed 4: 1600 unique cells observed, 1825 total observations
+Fetching round 597e60cf-d1a1-4627-ac4d-2a61da68b6df...
+  Map: 40×40, 5 seeds
+  Pooled round params: er=0.020 ws=0.150 fd=0.080
+  Seed 0: running MC simulation (100 runs)... done
+  Seed 1: running MC simulation (100 runs)... done
+  Seed 2: running MC simulation (100 runs)... done
+  Seed 3: running MC simulation (100 runs)... done
+  Seed 4: running MC simulation (100 runs)... done
+  Seed 0: computing prediction (1825 obs, 13 settlement-stat cells)... done
+    Most likely classes: Empty:1204, Settlement:8, Ruin:3, Forest:356, Mountain:29
+  Seed 1: computing prediction (1825 obs, 27 settlement-stat cells)... done
+    Most likely classes: Empty:1216, Settlement:10, Ruin:3, Forest:348, Mountain:23
+  Seed 2: computing prediction (1825 obs, 20 settlement-stat cells)... done
+    Most likely classes: Empty:1177, Settlement:12, Ruin:6, Forest:362, Mountain:43
+  Seed 3: computing prediction (1825 obs, 26 settlement-stat cells)... done
+    Most likely classes: Empty:1214, Settlement:3, Ruin:2, Forest:345, Mountain:36
+  Seed 4: computing prediction (1825 obs, 10 settlement-stat cells)... done
+    Most likely classes: Empty:1232, Settlement:2, Ruin:1, Forest:329, Mountain:36
+  Saved predictions → predictions.json
+
+Done. Review predictions.json, then submit with:
+  python main.py submit --round-id 597e60cf-d1a1-4627-ac4d-2a61da68b6df
+[2026-03-22 00:17:16] Submitting all seeds...
+[2026-03-22 00:17:16] Submitting all seeds...
+  Seed 0: submitting... status=accepted
+  Seed 1: submitting... status=accepted
+  Seed 2: submitting... status=accepted
+  Seed 3: submitting... status=accepted
+  Seed 4: submitting... status=accepted
+[2026-03-22 00:17:24] Running autolearn (train)...
+[2026-03-22 00:17:24] Running autolearn (train)...
+Fetching completed rounds...
+  Found 18 completed round(s) (18 participated, 0 unparticipated)
+
+Round 18  (b0f9d1bf-4b71-4e6e-816c-19c718d29056)  [participated]:
+  Seed 0: score=65.5361  1359 training cells  er=0.120
+  Seed 1: score=64.7302  1359 training cells  er=0.120
+  Seed 2: score=61.6531  1375 training cells  er=0.120
+  Seed 3: score=66.3089  1368 training cells  er=0.120
+  Seed 4: score=62.5743  1360 training cells  er=0.120
+
+Round 17  (3eb0c25d-28fa-48ca-b8e1-fc249e3918e9)  [participated]:
+  Seed 0: score=65.1559  1381 training cells  er=0.111
+  Seed 1: score=65.7664  1354 training cells  er=0.111
+  Seed 2: score=67.0085  1341 training cells  er=0.111
+  Seed 3: score=67.071  1335 training cells  er=0.111
+  Seed 4: score=67.9628  1346 training cells  er=0.111
+
+Round 16  (8f664aed-8839-4c85-bed0-77a2cac7c6f5)  [participated]:
+  Seed 0: score=52.5766  1353 training cells  er=0.036
+  Seed 1: score=53.0566  1389 training cells  er=0.036
+  Seed 2: score=56.1122  1385 training cells  er=0.036
+  Seed 3: score=54.0671  1358 training cells  er=0.036
+  Seed 4: score=52.9368  1401 training cells  er=0.036
+
+Round 15  (cc5442dd-bc5d-418b-911b-7eb960cb0390)  [participated]:
+  Seed 0: score=41.9721  1395 training cells  er=0.029
+  Seed 1: score=38.9745  1366 training cells  er=0.029
+  Seed 2: score=35.8893  1354 training cells  er=0.029
+  Seed 3: score=40.5081  1380 training cells  er=0.029
+  Seed 4: score=34.2011  1363 training cells  er=0.029
+
+Round 14  (d0a2c894-2162-4d49-86cf-435b9013f3b8)  [participated]:
+  Seed 0: score=33.8895  1388 training cells  er=0.103
+  Seed 1: score=35.9828  1405 training cells  er=0.103
+  Seed 2: score=35.3453  1387 training cells  er=0.103
+  Seed 3: score=34.4888  1376 training cells  er=0.103
+  Seed 4: score=35.7518  1368 training cells  er=0.103
+
+Round 13  (7b4bda99-6165-4221-97cc-27880f5e6d95)  [participated]:
+  Seed 0: score=None  1384 training cells  er=0.020
+  Seed 1: score=None  1350 training cells  er=0.020
+  Seed 2: score=None  1359 training cells  er=0.020
+  Seed 3: score=None  1382 training cells  er=0.020
+  Seed 4: score=None  1363 training cells  er=0.020
+
+Round 12  (795bfb1f-54bd-4f39-a526-9868b36f7ebd)  [participated]:
+  Seed 0: score=None  1362 training cells  er=0.100
+  Seed 1: score=None  1362 training cells  er=0.100
+  Seed 2: score=None  1330 training cells  er=0.100
+  Seed 3: score=None  1356 training cells  er=0.100
+  Seed 4: score=None  1368 training cells  er=0.100
+
+Round 11  (324fde07-1670-4202-b199-7aa92ecb40ee)  [participated]:
+  Seed 0: score=None  1348 training cells  er=0.111
+  Seed 1: score=None  1333 training cells  er=0.111
+  Seed 2: score=None  1351 training cells  er=0.111
+  Seed 3: score=None  1325 training cells  er=0.111
+  Seed 4: score=None  1318 training cells  er=0.111
+
+Round 10  (75e625c3-60cb-4392-af3e-c86a98bde8c2)  [participated]:
+  Seed 0: score=52.1469  1373 training cells  er=0.020
+  Seed 1: score=46.7218  1381 training cells  er=0.020
+  Seed 2: score=35.8093  1345 training cells  er=0.020
+  Seed 3: score=47.0867  1399 training cells  er=0.020
+  Seed 4: score=45.6937  1334 training cells  er=0.020
+
+Round 9  (2a341ace-0f57-4309-9b89-e59fe0f09179)  [participated]:
+  Seed 0: score=46.3707  1327 training cells  er=0.020
+  Seed 1: score=21.3695  1357 training cells  er=0.020
+  Seed 2: score=24.1893  1396 training cells  er=0.020
+  Seed 3: score=26.1967  1356 training cells  er=0.020
+  Seed 4: score=21.3  1352 training cells  er=0.020
+
+Round 8  (c5cdf100-a876-4fb7-b5d8-757162c97989)  [participated]:
+  Seed 0: score=48.1629  1350 training cells  er=0.020
+  Seed 1: score=52.7621  1354 training cells  er=0.020
+  Seed 2: score=46.2535  1365 training cells  er=0.020
+  Seed 3: score=49.9218  1343 training cells  er=0.020
+  Seed 4: score=50.2729  1384 training cells  er=0.020
+
+Round 7  (36e581f1-73f8-453f-ab98-cbe3052b701b)  [participated]:
+  Seed 0: score=37.3362  1353 training cells  er=0.090
+  Seed 1: score=39.279  1382 training cells  er=0.090
+  Seed 2: score=37.0136  1361 training cells  er=0.090
+  Seed 3: score=38.6243  1381 training cells  er=0.090
+  Seed 4: score=36.5054  1351 training cells  er=0.090
+
+Round 6  (ae78003a-4efe-425a-881a-d16a39bca0ad)  [participated]:
+  Seed 0: score=50.0622  1394 training cells  er=0.084
+  Seed 1: score=48.698  1358 training cells  er=0.084
+  Seed 2: score=46.9908  1319 training cells  er=0.084
+  Seed 3: score=48.7461  1385 training cells  er=0.084
+  Seed 4: score=50.3341  1378 training cells  er=0.084
+
+Round 5  (fd3c92ff-3178-4dc9-8d9b-acf389b3982b)  [participated]:
+  Seed 0: score=None  1386 training cells  er=0.055
+  Seed 1: score=None  1387 training cells  er=0.055
+  Seed 2: score=None  1358 training cells  er=0.055
+  Seed 3: score=None  1322 training cells  er=0.055
+  Seed 4: score=None  1357 training cells  er=0.055
+
+Round 4  (8e839974-b13b-407b-a5e7-fc749d877195)  [participated]:
+  Seed 0: score=None  1359 training cells  er=0.020
+  Seed 1: score=None  1373 training cells  er=0.020
+  Seed 2: score=None  1317 training cells  er=0.020
+  Seed 3: score=None  1325 training cells  er=0.020
+  Seed 4: score=None  1384 training cells  er=0.020
+
+Round 3  (f1dac9a9-5cf1-49a9-8f17-d6cb5d5ba5cb)  [participated]:
+  Seed 0: score=None  1326 training cells  er=0.020
+  Seed 1: score=None  1362 training cells  er=0.020
+  Seed 2: score=None  1352 training cells  er=0.020
+  Seed 3: score=None  1339 training cells  er=0.020
+  Seed 4: score=None  1382 training cells  er=0.020
+
+Round 2  (76909e29-f664-4b2f-b16b-61b7507277e9)  [participated]:
+  Seed 0: score=None  1388 training cells  er=0.108
+  Seed 1: score=None  1354 training cells  er=0.108
+  Seed 2: score=None  1332 training cells  er=0.108
+  Seed 3: score=None  1339 training cells  er=0.108
+  Seed 4: score=None  1372 training cells  er=0.108
+
+Round 1  (71451d74-be9f-471f-aacd-a41f3b68a9cd)  [participated]:
+  Seed 0: score=None  1375 training cells  er=0.087
+  Seed 1: score=None  1335 training cells  er=0.087
+  Seed 2: score=None  1370 training cells  er=0.087
+  Seed 3: score=None  1370 training cells  er=0.087
+  Seed 4: score=None  1363 training cells  er=0.087
+
+Training on 122,542 samples (18 round(s) × up to 5 seeds)...
+  Settlement   n= 4000  CE=1.1705  converged=True
+  Port         n=  154  CE=1.3100  converged=True
+  Forest       n=30792  CE=0.8095  converged=True
+  Plains       n=87596  CE=0.7011  converged=True
+Saved model weights → model_weights.json
+
+Done. Model weights will be used automatically for future predictions.
+[2026-03-22 00:19:52] Running self-review (code quality check)...
+[2026-03-22 00:19:52] Running self-review (code quality check)...
+I need write permissions. Here's a summary of all issues found and the fixes needed:
+
+---
+
+### Issues Found
+
+**`backtest.py` line 31** — stale comment:
+```python
+N_FEATURES_NEW = learned_model.N_FEATURES   # 13
+```
+`N_FEATURES` is 14, not 13. The 14 features are listed correctly in `learned_model.py`'s constant definition.
+
+---
+
+**`test_harness.py` lines 134–138** — `winter_severity=0.25` is wildly out of calibration range:
+```python
+def _run_simulation(initial_grid, initial_settlements, rng,
+                    expansion_rate=0.12, winter_severity=0.25):
+```
+The calibrated range (from `infer_params_from_obs` / `simulation.py`) is `0.04–0.15`. A value of `0.25` causes near-total settlement collapse in every mock test run, making test harness results unrealistically pessimistic and not representative of real game conditions. Should be `0.05`.
+
+---
+
+**`main.py` lines 330–334** — `total_sett_obs` is computed but never used:
+```python
+total_sett_obs = sum(
+    1 for s in initial_states for y, row in enumerate(s["grid"])
+    for x, v in enumerate(row) if v in {config.TERRAIN_SETTLEMENT, config.TERRAIN_PORT}
+    if f"{x},{y}" in observations.get(str(initial_states.index(s)), {})
+)
+```
+This dead code also uses `initial_states.index(s)` which performs dict equality comparisons on each iteration (O(n²)), and would incorrectly map duplicate-valued dicts to index 0. Should be removed entirely.
+
+---
+
+Please grant write permissions and I'll apply all three fixes.
+[2026-03-22 00:22:58] Committing and pushing changes...
+[2026-03-22 00:22:58] Committing and pushing changes...
+[claude/viking-prediction-model-WXUyO 836ffcb] Auto: R20260322-0022 observe+predict+submit+train+review
+ 1 file changed, 38 insertions(+)
+To http://127.0.0.1:39937/git/martyman798-netizen/warehouse-project
+   eac7999..836ffcb  claude/viking-prediction-model-WXUyO -> claude/viking-prediction-model-WXUyO
+branch 'claude/viking-prediction-model-WXUyO' set up to track 'origin/claude/viking-prediction-model-WXUyO'.
+[2026-03-22 00:22:58] Round 597e60cf-d1a1-4627-ac4d-2a61da68b6df complete.
+[2026-03-22 00:22:58] Round 597e60cf-d1a1-4627-ac4d-2a61da68b6df complete.
+[2026-03-22 00:22:58] Sleeping 4500s until next check...
+[2026-03-22 00:22:58] Sleeping 4500s until next check...

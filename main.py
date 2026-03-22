@@ -327,11 +327,6 @@ def cmd_predict(args, client: AstarIslandClient):
     # parameters (expansion_rate, winter_severity, food_drain).  ~5× more settlement
     # observations gives a much more accurate round-level harshness estimate.
     er, ws, fd = infer_params_pooled(initial_states, observations)
-    total_sett_obs = sum(
-        1 for s in initial_states for y, row in enumerate(s["grid"])
-        for x, v in enumerate(row) if v in {config.TERRAIN_SETTLEMENT, config.TERRAIN_PORT}
-        if f"{x},{y}" in observations.get(str(initial_states.index(s)), {})
-    )
     print(f"  Pooled round params: er={er:.3f} ws={ws:.3f} fd={fd:.3f}")
 
     local_mc_priors = []

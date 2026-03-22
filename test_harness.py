@@ -131,7 +131,7 @@ def _initial_settlements(grid: list[list[int]]) -> list[dict]:
 # Delegated to simulation.py — imported above as run_simulation / compute_ground_truth.
 
 def _run_simulation(initial_grid, initial_settlements, rng,
-                    expansion_rate=0.12, winter_severity=0.25):
+                    expansion_rate=0.12, winter_severity=0.05):
     """Thin wrapper kept for backward compatibility."""
     return run_simulation(initial_grid, initial_settlements, rng,
                           expansion_rate=expansion_rate,
