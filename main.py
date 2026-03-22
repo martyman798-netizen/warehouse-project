@@ -326,7 +326,7 @@ def cmd_predict(args, client: AstarIslandClient):
     # Pool collapse evidence from all 5 seeds — they share the same hidden round
     # parameters (expansion_rate, winter_severity, food_drain).  ~5× more settlement
     # observations gives a much more accurate round-level harshness estimate.
-    er, ws, fd = infer_params_pooled(initial_states, observations)
+    er, ws, fd = infer_params_pooled(initial_states, observations, raw_stats)
     print(f"  Pooled round params: er={er:.3f} ws={ws:.3f} fd={fd:.3f}")
 
     local_mc_priors = []
@@ -363,6 +363,8 @@ def cmd_predict(args, client: AstarIslandClient):
             local_mc_prior=local_mc_priors[seed_idx],
             n_mc_runs=n_mc,
             expansion_rate=seed_expansion_rates[seed_idx],
+            pseudo_count=100,  # Bayesian weight of MC prior; lower = more weight
+                               # to real API observations (corrects simulation bias)
         )
 
         # Validate: probabilities must sum to 1.0 per cell
@@ -594,8 +596,8 @@ def main():
     # predict
     p_pred = subparsers.add_parser("predict", help="Build prediction tensors from observations")
     p_pred.add_argument("--round-id", required=True, help="Round UUID")
-    p_pred.add_argument("--mc-runs", type=int, default=100, dest="mc_runs",
-                        help="Local MC simulation runs for prior (default: 100)")
+    p_pred.add_argument("--mc-runs", type=int, default=300, dest="mc_runs",
+                        help="Local MC simulation runs for prior (default: 300)")
 
     # submit
     p_sub = subparsers.add_parser("submit", help="Submit predictions to API")
@@ -614,8 +616,8 @@ def main():
     p_run = subparsers.add_parser("run", help="observe + predict + submit in one go")
     p_run.add_argument("--round-id", required=True, help="Round UUID")
     p_run.add_argument("--budget", type=int, default=None, help="Max queries to use")
-    p_run.add_argument("--mc-runs", type=int, default=100, dest="mc_runs",
-                       help="Local MC simulation runs for prior (default: 100)")
+    p_run.add_argument("--mc-runs", type=int, default=300, dest="mc_runs",
+                       help="Local MC simulation runs for prior (default: 300)")
 
     args = parser.parse_args()
 
