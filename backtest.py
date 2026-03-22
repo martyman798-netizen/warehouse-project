@@ -27,7 +27,7 @@ E, S, P, R, F, M = (
 )
 
 N_FEATURES_OLD = 8
-N_FEATURES_NEW = learned_model.N_FEATURES   # 13
+N_FEATURES_NEW = learned_model.N_FEATURES   # 14
 
 
 # ---------------------------------------------------------------------------
