@@ -33,10 +33,10 @@ while true; do
 
         if [ "$QUERIES_USED" = "0" ]; then
             log "Running full pipeline (observe + predict)..."
-            cd "$SCRIPT_DIR" && python3 main.py run --round-id "$ROUND_ID" >> "$LOG" 2>&1
+            cd "$SCRIPT_DIR" && python3 main.py run --round-id "$ROUND_ID" --mc-runs 300 >> "$LOG" 2>&1
         else
             log "Queries already spent — running predict only..."
-            cd "$SCRIPT_DIR" && python3 main.py predict --round-id "$ROUND_ID" >> "$LOG" 2>&1
+            cd "$SCRIPT_DIR" && python3 main.py predict --round-id "$ROUND_ID" --mc-runs 300 >> "$LOG" 2>&1
         fi
 
         log "Submitting all seeds..."
